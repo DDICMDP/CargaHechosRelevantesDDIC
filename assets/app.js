@@ -388,7 +388,12 @@
   bind("generar",   ()=>{ preview(); });
   document.addEventListener("keydown",(e)=>{ if(e.ctrlKey && e.key==="Enter"){ e.preventDefault(); preview(); } });
 
-  bind("copiarWA", ()=>{ const out=preview(); navigator.clipboard.writeText(out.waLong).then(()=>alert("Copiado para WhatsApp")); });
+  bind("copiarWA", ()=>{
+  // leer el toggle antes de construir el texto
+  window.WA_MERGE_SOFTBREAKS = !!$ID("wa_merge")?.checked;
+  const out = preview(); 
+  navigator.clipboard.writeText(out.waLong).then(()=>alert("Copiado para WhatsApp"));
+});
 
   bind("descargarWord", async ()=>{
     try{ await HRFMT.downloadDocx(buildDataFromForm(), (window.docx||{})); }
