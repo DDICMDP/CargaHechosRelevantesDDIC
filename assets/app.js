@@ -1,80 +1,54 @@
 (function(){
-  const $ = s => document.querySelector(s);
-  const $$ = s => Array.from(document.querySelectorAll(s));
-  const showErr = m => { const b=$("#errorBox"); if(b){ b.textContent="Error: "+m; b.hidden=false; } };
+  // --------- Helpers a prueba de null ---------
+  const $ID = (id) => document.getElementById(id);
+  const val  = (id) => ($ID(id)?.value ?? "");
+  const setv = (id, v) => { if ($ID(id)) $ID(id).value = v; };
+  const chk  = (id) => !!$ID(id)?.checked;
+  const setchk = (id, v) => { if ($ID(id)) $ID(id).checked = !!v; };
+  const styleShow = (id, show) => { if ($ID(id)) $ID(id).style.display = show ? "block" : "none"; };
+  const $$ = (sel)=> Array.from(document.querySelectorAll(sel));
+  const showErr = m => { const b=$ID("errorBox"); if(b){ b.textContent="Error: "+m; b.hidden=false; } };
 
-  function bindClick(id, handler){
-    const n = document.getElementById(id);
-    if (n) n.onclick = handler;
-    return !!n;
-  }
-
-  const CASEKEY="hr_cases_v1";
-  const CATKEY ="hr_catalogs_v1";
-
-  const TitleCase = (s)=> (s||"").toLowerCase().split(/(\s|-)/).map(p=>{
-    if(p.trim()===""||p==='-') return p; return p.charAt(0).toUpperCase()+p.slice(1);
-  }).join("");
-
-  // ==== Fecha (solo dd-mm-aaaa en título) ====
+  // ==== Fecha (solo dd-mm-aaaa) ====
   function formattedFecha(){
-    const d = $("#g_fecha_dia").value;
+    const d = val("g_fecha_dia");
     if(!d) return "";
     const [y,m,day] = d.split("-");
     return `${day}-${m}-${y}`;
   }
 
-  // ===== Catálogos (seed + persistencia) =====
+  // ===== Catálogos =====
+  const CASEKEY="hr_cases_v1";
+  const CATKEY ="hr_catalogs_v1";
+
   const DEFAULT_CATALOGS = {
     "General Pueyrredon": {
-      localidades: [
-        "Mar del Plata","Batán","Sierra de los Padres","Chapadmalal","Estación Camet","El Boquerón"
-      ],
-      dependencias: [
-        "Comisaría 1ra MdP","Comisaría 2da MdP","Comisaría 3ra MdP","Comisaría 4ta MdP",
-        "Comisaría 5ta MdP","Comisaría 6ta MdP","Subcomisaría Camet","Subcomisaría Acantilados",
-        "DDI Mar del Plata","Comisaría de la Mujer MdP","UPPL MdP","CPO MdP"
-      ]
+      localidades: ["Mar del Plata","Batán","Sierra de los Padres","Chapadmalal","Estación Camet","El Boquerón"],
+      dependencias: ["Comisaría 1ra MdP","Comisaría 2da MdP","Comisaría 3ra MdP","Comisaría 4ta MdP","Comisaría 5ta MdP","Comisaría 6ta MdP","Subcomisaría Camet","Subcomisaría Acantilados","DDI Mar del Plata","Comisaría de la Mujer MdP","UPPL MdP","CPO MdP"]
     },
     "Balcarce": {
       localidades: ["Balcarce","San Agustín","Los Pinos"],
-      dependencias: [
-        "Comisaría Balcarce","Comisaría de la Mujer Balcarce","DDI Balcarce","Destacamento San Agustín"
-      ]
+      dependencias: ["Comisaría Balcarce","Comisaría de la Mujer Balcarce","DDI Balcarce","Destacamento San Agustín"]
     },
     "Mar Chiquita": {
       localidades: ["Coronel Vidal","Santa Clara del Mar","Vivoratá","Mar de Cobo","La Caleta","Mar Chiquita"],
-      dependencias: [
-        "Comisaría Coronel Vidal","Comisaría Santa Clara del Mar","Comisaría de la Mujer Mar Chiquita","Destacamento Mar de Cobo"
-      ]
+      dependencias: ["Comisaría Coronel Vidal","Comisaría Santa Clara del Mar","Comisaría de la Mujer Mar Chiquita","Destacamento Mar de Cobo"]
     },
     "General Alvarado": {
       localidades: ["Miramar","Mechongué","Comandante N. Otamendi","Mar del Sud"],
-      dependencias: [
-        "Comisaría Miramar","Comisaría Otamendi","Comisaría de la Mujer Gral. Alvarado","Destacamento Mar del Sud"
-      ]
+      dependencias: ["Comisaría Miramar","Comisaría Otamendi","Comisaría de la Mujer Gral. Alvarado","Destacamento Mar del Sud"]
     }
   };
-
-  function getCatalogs(){
-    try{
-      const raw = localStorage.getItem(CATKEY);
-      if(!raw) return structuredClone(DEFAULT_CATALOGS);
-      const parsed = JSON.parse(raw);
-      const cat = structuredClone(DEFAULT_CATALOGS);
-      for(const k of Object.keys(parsed||{})){ cat[k] = parsed[k]; }
-      return cat;
-    } catch { return structuredClone(DEFAULT_CATALOGS); }
-  }
-  function setCatalogs(obj){ localStorage.setItem(CATKEY, JSON.stringify(obj)); }
+  const getCatalogs=()=>{ try{const raw=localStorage.getItem(CATKEY); if(!raw) return structuredClone(DEFAULT_CATALOGS); const parsed=JSON.parse(raw); const cat=structuredClone(DEFAULT_CATALOGS); Object.keys(parsed||{}).forEach(k=>cat[k]=parsed[k]); return cat;}catch{return structuredClone(DEFAULT_CATALOGS);} };
+  const setCatalogs=(obj)=> localStorage.setItem(CATKEY, JSON.stringify(obj));
 
   // ===== Casos =====
-  function getCases(){ try{ return JSON.parse(localStorage.getItem(CASEKEY)||"[]"); }catch{ return []; } }
-  function setCases(arr){ localStorage.setItem(CASEKEY, JSON.stringify(arr)); }
-  function freshId(){ return "c_"+Date.now()+"_"+Math.random().toString(36).slice(2,7); }
+  const getCases=()=>{ try{ return JSON.parse(localStorage.getItem(CASEKEY)||"[]"); }catch{ return []; } };
+  const setCases=(a)=> localStorage.setItem(CASEKEY, JSON.stringify(a));
+  const freshId=()=> "c_"+Date.now()+"_"+Math.random().toString(36).slice(2,7);
 
   function renderCases(){
-    const box=$("#casesList"); if(!box) return;
+    const box=$ID("casesList"); if(!box) return;
     const cases = getCases();
     if(!cases.length){ box.innerHTML="Sin hechos guardados."; return; }
     box.innerHTML = `<table><thead><tr><th></th><th></th><th>Nombre</th><th>Fecha</th><th>Tipo</th><th>Número</th><th>Partido</th><th>Dep.</th></tr></thead><tbody>${
@@ -92,10 +66,10 @@
     attachCaseSearch();
   }
 
-  // ===== Buscador en la tabla =====
+  // ===== Buscador =====
   function attachCaseSearch() {
-    const input = document.getElementById("caseSearch");
-    const box = document.getElementById("casesList");
+    const input = $ID("caseSearch");
+    const box = $ID("casesList");
     if (!input || !box) return;
     input.oninput = () => {
       const q = input.value.toLowerCase();
@@ -107,37 +81,34 @@
 
   // ===== Desplegables dependientes =====
   function fillSelectOptions(select, list, {includeManual=false}={}){
+    if(!select) return;
     select.innerHTML = "";
     select.append(new Option("— Elegir —", ""));
     (list||[]).forEach(v=> select.append(new Option(v, v)));
     if(includeManual) select.append(new Option("Escribir manualmente…", "__manual__"));
   }
-
   function loadLocalidadesAndDeps(){
     const cat = getCatalogs();
-    const partido = $("#g_partido").value || "";
-    const locSel = $("#g_localidad");
-    const depSel = $("#g_dep");
-    const depManualWrap = $("#g_dep_manual_wrap");
-
+    const partido = val("g_partido") || "";
+    const locSel = $ID("g_localidad");
+    const depSel = $ID("g_dep");
+    if(!locSel || !depSel){ return; }
     if(!partido || !cat[partido]){
       fillSelectOptions(locSel, [], {});
       fillSelectOptions(depSel, [], {includeManual:true});
-      depManualWrap.style.display="none";
+      styleShow("g_dep_manual_wrap", false);
       return;
     }
     fillSelectOptions(locSel, (cat[partido].localidades||[]), {});
     fillSelectOptions(depSel, (cat[partido].dependencias||[]), {includeManual:true});
-    depManualWrap.style.display = (depSel.value==="__manual__") ? "block" : "none";
+    styleShow("g_dep_manual_wrap", (val("g_dep")==="__manual__"));
   }
-
-  $("#g_dep")?.addEventListener("change", ()=>{
-    const depManualWrap = $("#g_dep_manual_wrap");
-    depManualWrap.style.display = ($("#g_dep").value==="__manual__") ? "block" : "none";
+  $ID("g_dep")?.addEventListener("change", ()=>{
+    styleShow("g_dep_manual_wrap", (val("g_dep")==="__manual__"));
     renderTitlePreview();
   });
 
-  // ===== Etiquetas dinámicas =====
+  // ===== Etiquetas =====
   const ROLE_KEYS = ["victima","imputado","sindicado","denunciante","testigo","pp","aprehendido","detenido","menor","nn","damnificado institucional"];
   const OBJ_CATS  = ["secuestro","sustraccion","hallazgo","otro"];
 
@@ -153,7 +124,6 @@
     textarea.setSelectionRange(pos,pos);
     textarea.focus();
   }
-
   function availableTags(){
     const tags = new Set();
     const allPeople = (CIV.store||[]).concat(FZA.store||[]);
@@ -170,9 +140,8 @@
     });
     return Array.from(tags);
   }
-
   function renderTagHelper(){
-    const box = document.getElementById("tagHelper");
+    const box = $ID("tagHelper");
     if(!box) return;
     const tags = availableTags();
     if(!tags.length){
@@ -181,60 +150,39 @@
     }
     box.innerHTML = tags.map(t=>`<button type="button" class="chip" data-tag="${t}">${t}</button>`).join("");
     box.querySelectorAll("[data-tag]").forEach(btn=>{
-      btn.onclick = ()=> insertAtCursor(document.getElementById("cuerpo"), btn.dataset.tag);
+      btn.onclick = ()=> insertAtCursor($ID("cuerpo"), btn.dataset.tag);
     });
   }
 
-  // ===== Civiles (con editar) =====
+  // ===== Civiles (editar) =====
+  const TitleCase = (s)=> (s||"").toLowerCase().split(/(\s|-)/).map(p=>{
+    if(p.trim()===""||p==='-') return p; return p.charAt(0).toUpperCase()+p.slice(1);
+  }).join("");
+
   const CIV = {
-    store:[],
-    editingIndex: null,
+    store:[], editingIndex:null,
     addOrUpdate(){
       const p = {
-        nombre: $("#c_nombre").value, apellido: $("#c_apellido").value, edad: $("#c_edad").value,
-        genero: $("#c_genero").value, dni: $("#c_dni").value, pais: $("#c_pais").value,
-        loc_domicilio: $("#c_loc").value, calle_domicilio: $("#c_calle").value,
-        vinculo: $("#c_vinculo").value, obito: $("#c_obito").value==="true"
+        nombre: val("c_nombre"), apellido: val("c_apellido"), edad: val("c_edad"),
+        genero: val("c_genero"), dni: val("c_dni"), pais: val("c_pais"),
+        loc_domicilio: val("c_loc"), calle_domicilio: val("c_calle"),
+        vinculo: val("c_vinculo"), obito: val("c_obito")==="true"
       };
-      if (this.editingIndex === null) {
-        this.store.push(p);
-      } else {
-        this.store[this.editingIndex] = p;
-        this.editingIndex = null;
-        const btn = document.getElementById("addCivil");
-        if (btn) btn.textContent = "Agregar involucrado";
-        const cancel = document.getElementById("cancelEditCivil");
-        if (cancel) cancel.remove();
-      }
-      this.clearForm();
-      this.render();
+      if (this.editingIndex === null) this.store.push(p);
+      else { this.store[this.editingIndex]=p; this.editingIndex=null; const b=$ID("addCivil"); if(b) b.textContent="Agregar involucrado"; $ID("cancelEditCivil")?.remove(); }
+      this.clearForm(); this.render();
     },
-    clearForm(){
-      $("#c_nombre").value=""; $("#c_apellido").value=""; $("#c_edad").value="";
-      $("#c_genero").value=""; $("#c_dni").value=""; $("#c_pais").value="";
-      $("#c_loc").value=""; $("#c_calle").value=""; $("#c_vinculo").value="Victima"; $("#c_obito").value="false";
-    },
+    clearForm(){ setv("c_nombre",""); setv("c_apellido",""); setv("c_edad",""); setv("c_genero",""); setv("c_dni",""); setv("c_pais",""); setv("c_loc",""); setv("c_calle",""); setv("c_vinculo","Victima"); setv("c_obito","false"); },
     startEdit(i){
-      const p = this.store[i]; if(!p) return;
-      $("#c_nombre").value=p.nombre||""; $("#c_apellido").value=p.apellido||""; $("#c_edad").value=p.edad||"";
-      $("#c_genero").value=p.genero||""; $("#c_dni").value=p.dni||""; $("#c_pais").value=p.pais||"";
-      $("#c_loc").value=p.loc_domicilio||""; $("#c_calle").value=p.calle_domicilio||"";
-      $("#c_vinculo").value=p.vinculo||"Victima"; $("#c_obito").value=p.obito?"true":"false";
-      this.editingIndex = i;
-      const btn = document.getElementById("addCivil");
-      if (btn) btn.textContent = "Guardar cambios";
-      if (!document.getElementById("cancelEditCivil")) {
-        const cancel = document.createElement("button");
-        cancel.id = "cancelEditCivil";
-        cancel.className = "btn ghost";
-        cancel.style.marginLeft = "6px";
-        cancel.textContent = "Cancelar";
-        btn.parentElement.appendChild(cancel);
-        cancel.onclick = ()=>{ this.editingIndex=null; this.clearForm(); if(btn) btn.textContent="Agregar involucrado"; cancel.remove(); };
-      }
+      const p=this.store[i]; if(!p) return;
+      setv("c_nombre",p.nombre||""); setv("c_apellido",p.apellido||""); setv("c_edad",p.edad||"");
+      setv("c_genero",p.genero||""); setv("c_dni",p.dni||""); setv("c_pais",p.pais||"");
+      setv("c_loc",p.loc_domicilio||""); setv("c_calle",p.calle_domicilio||""); setv("c_vinculo",p.vinculo||"Victima"); setv("c_obito",p.obito?"true":"false");
+      this.editingIndex=i; const btn=$ID("addCivil"); if(btn) btn.textContent="Guardar cambios";
+      if(!$ID("cancelEditCivil")){ const c=document.createElement("button"); c.id="cancelEditCivil"; c.className="btn ghost"; c.style.marginLeft="6px"; c.textContent="Cancelar"; btn.parentElement.appendChild(c); c.onclick=()=>{ this.editingIndex=null; this.clearForm(); if(btn) btn.textContent="Agregar involucrado"; c.remove(); }; }
     },
     render(){
-      const box=$("#civilesList");
+      const box=$ID("civilesList");
       if(!this.store.length){ box.innerHTML=""; renderTagHelper(); return; }
       box.innerHTML = `<div class="table"><table><thead><tr>
         <th>#</th><th>Vínculo</th><th>Nombre</th><th>Apellido</th><th>Edad</th><th>DNI</th><th>Domicilio</th><th>Acción</th>
@@ -250,67 +198,35 @@
           </td>
         </tr>`).join("")
       }</tbody></table></div>`;
-      $$("#civilesList [data-delc]").forEach(b=> b.onclick = ()=>{
-        this.store.splice(parseInt(b.dataset.delc,10),1); this.render();
-      });
-      $$("#civilesList [data-editc]").forEach(b=> b.onclick = ()=>{
-        this.startEdit(parseInt(b.dataset.editc,10));
-      });
+      $$("#civilesList [data-delc]").forEach(b=> b.onclick = ()=>{ this.store.splice(parseInt(b.dataset.delc,10),1); this.render(); });
+      $$("#civilesList [data-editc]").forEach(b=> b.onclick = ()=>{ this.startEdit(parseInt(b.dataset.editc,10)); });
       renderTagHelper();
     }
   };
 
-  // ===== Fuerzas (con editar) =====
+  // ===== Fuerzas (editar) =====
   const FZA = {
-    store:[],
-    editingIndex: null,
+    store:[], editingIndex:null,
     addOrUpdate(){
       const p = {
-        nombre: $("#f_nombre").value, apellido: $("#f_apellido").value, edad: $("#f_edad").value,
-        fuerza: $("#f_fuerza").value, jerarquia: $("#f_jerarquia").value, legajo: $("#f_legajo").value,
-        destino: $("#f_destino").value, loc_domicilio: $("#f_loc").value, calle_domicilio: $("#f_calle").value,
-        vinculo: $("#f_vinculo").value, obito: $("#f_obito").value==="true"
+        nombre: val("f_nombre"), apellido: val("f_apellido"), edad: val("f_edad"),
+        fuerza: val("f_fuerza"), jerarquia: val("f_jerarquia"), legajo: val("f_legajo"),
+        destino: val("f_destino"), loc_domicilio: val("f_loc"), calle_domicilio: val("f_calle"),
+        vinculo: val("f_vinculo"), obito: val("f_obito")==="true"
       };
-      if (this.editingIndex === null) {
-        this.store.push(p);
-      } else {
-        this.store[this.editingIndex] = p;
-        this.editingIndex = null;
-        const btn = document.getElementById("addFuerza");
-        if (btn) btn.textContent = "Agregar personal";
-        const cancel = document.getElementById("cancelEditFza");
-        if (cancel) cancel.remove();
-      }
-      this.clearForm();
-      this.render();
+      if (this.editingIndex === null) this.store.push(p);
+      else { this.store[this.editingIndex]=p; this.editingIndex=null; const b=$ID("addFuerza"); if(b) b.textContent="Agregar personal"; $ID("cancelEditFza")?.remove(); }
+      this.clearForm(); this.render();
     },
-    clearForm(){
-      $("#f_nombre").value=""; $("#f_apellido").value=""; $("#f_edad").value="";
-      $("#f_fuerza").value=""; $("#f_jerarquia").value=""; $("#f_legajo").value="";
-      $("#f_destino").value=""; $("#f_loc").value=""; $("#f_calle").value="";
-      $("#f_vinculo").value="Imputado"; $("#f_obito").value="false";
-    },
+    clearForm(){ setv("f_nombre",""); setv("f_apellido",""); setv("f_edad",""); setv("f_fuerza",""); setv("f_jerarquia",""); setv("f_legajo",""); setv("f_destino",""); setv("f_loc",""); setv("f_calle",""); setv("f_vinculo","Imputado"); setv("f_obito","false"); },
     startEdit(i){
-      const p = this.store[i]; if(!p) return;
-      $("#f_nombre").value=p.nombre||""; $("#f_apellido").value=p.apellido||""; $("#f_edad").value=p.edad||"";
-      $("#f_fuerza").value=p.fuerza||""; $("#f_jerarquia").value=p.jerarquia||""; $("#f_legajo").value=p.legajo||"";
-      $("#f_destino").value=p.destino||""; $("#f_loc").value=p.loc_domicilio||""; $("#f_calle").value=p.calle_domicilio||"";
-      $("#f_vinculo").value=p.vinculo||"Imputado"; $("#f_obito").value=p.obito?"true":"false";
-      this.editingIndex = i;
-      const btn = document.getElementById("addFuerza");
-      if (btn) btn.textContent = "Guardar cambios";
-      if (!document.getElementById("cancelEditFza")) {
-        const cancel = document.createElement("button");
-        cancel.id = "cancelEditFza";
-        cancel.className = "btn ghost";
-        cancel.style.marginLeft = "6px";
-        cancel.textContent = "Cancelar";
-        btn.parentElement.appendChild(cancel);
-        cancel.onclick = ()=>{ this.editingIndex=null; this.clearForm(); if(btn) btn.textContent="Agregar personal"; cancel.remove(); };
-      }
+      const p=this.store[i]; if(!p) return;
+      setv("f_nombre",p.nombre||""); setv("f_apellido",p.apellido||""); setv("f_edad",p.edad||""); setv("f_fuerza",p.fuerza||""); setv("f_jerarquia",p.jerarquia||""); setv("f_legajo",p.legajo||""); setv("f_destino",p.destino||""); setv("f_loc",p.loc_domicilio||""); setv("f_calle",p.calle_domicilio||""); setv("f_vinculo",p.vinculo||"Imputado"); setv("f_obito",p.obito?"true":"false");
+      this.editingIndex=i; const btn=$ID("addFuerza"); if(btn) btn.textContent="Guardar cambios";
+      if(!$ID("cancelEditFza")){ const c=document.createElement("button"); c.id="cancelEditFza"; c.className="btn ghost"; c.style.marginLeft="6px"; c.textContent="Cancelar"; btn.parentElement.appendChild(c); c.onclick=()=>{ this.editingIndex=null; this.clearForm(); if(btn) btn.textContent="Agregar personal"; c.remove(); }; }
     },
     render(){
-      const box=$("#fuerzasList");
+      const box=$ID("fuerzasList");
       if(!this.store.length){ box.innerHTML=""; renderTagHelper(); return; }
       box.innerHTML = `<div class="table"><table><thead><tr>
         <th>#</th><th>Vínculo</th><th>Nombre</th><th>Apellido</th><th>Edad</th><th>Fuerza</th><th>Jerarquía</th><th>Destino</th><th>Acción</th>
@@ -325,58 +241,31 @@
           </td>
         </tr>`).join("")
       }</tbody></table></div>`;
-      $$("#fuerzasList [data-delf]").forEach(b=> b.onclick = ()=>{
-        this.store.splice(parseInt(b.dataset.delf,10),1); this.render();
-      });
-      $$("#fuerzasList [data-editf]").forEach(b=> b.onclick = ()=>{
-        this.startEdit(parseInt(b.dataset.editf,10));
-      });
+      $$("#fuerzasList [data-delf]").forEach(b=> b.onclick = ()=>{ this.store.splice(parseInt(b.dataset.delf,10),1); this.render(); });
+      $$("#fuerzasList [data-editf]").forEach(b=> b.onclick = ()=>{ this.startEdit(parseInt(b.dataset.editf,10)); });
       renderTagHelper();
     }
   };
 
-  // ===== Objetos (con editar) =====
+  // ===== Objetos (editar) =====
   const OBJ = {
-    store:[],
-    editingIndex: null,
+    store:[], editingIndex:null,
     addOrUpdate(){
-      const o = { descripcion: $("#o_desc").value, vinculo: $("#o_vinc").value };
+      const o = { descripcion: val("o_desc"), vinculo: val("o_vinc") };
       if(!o.descripcion.trim()) return;
-      if (this.editingIndex === null) {
-        this.store.push(o);
-      } else {
-        this.store[this.editingIndex] = o;
-        this.editingIndex = null;
-        const btn = document.getElementById("addObjeto");
-        if (btn) btn.textContent = "Agregar objeto";
-        const cancel = document.getElementById("cancelEditObj");
-        if (cancel) cancel.remove();
-      }
-      this.clearForm();
-      this.render();
+      if (this.editingIndex === null) this.store.push(o);
+      else { this.store[this.editingIndex]=o; this.editingIndex=null; const b=$ID("addObjeto"); if(b) b.textContent="Agregar objeto"; $ID("cancelEditObj")?.remove(); }
+      this.clearForm(); this.render();
     },
-    clearForm(){
-      $("#o_desc").value=""; $("#o_vinc").value="Secuestro";
-    },
+    clearForm(){ setv("o_desc",""); setv("o_vinc","Secuestro"); },
     startEdit(i){
-      const o = this.store[i]; if(!o) return;
-      $("#o_desc").value = o.descripcion||"";
-      $("#o_vinc").value = o.vinculo||"Secuestro";
-      this.editingIndex = i;
-      const btn = document.getElementById("addObjeto");
-      if (btn) btn.textContent = "Guardar cambios";
-      if (!document.getElementById("cancelEditObj")) {
-        const cancel = document.createElement("button");
-        cancel.id = "cancelEditObj";
-        cancel.className = "btn ghost";
-        cancel.style.marginLeft = "6px";
-        cancel.textContent = "Cancelar";
-        btn.parentElement.appendChild(cancel);
-        cancel.onclick = ()=>{ this.editingIndex=null; this.clearForm(); if(btn) btn.textContent="Agregar objeto"; cancel.remove(); };
-      }
+      const o=this.store[i]; if(!o) return;
+      setv("o_desc",o.descripcion||""); setv("o_vinc",o.vinculo||"Secuestro");
+      this.editingIndex=i; const btn=$ID("addObjeto"); if(btn) btn.textContent="Guardar cambios";
+      if(!$ID("cancelEditObj")){ const c=document.createElement("button"); c.id="cancelEditObj"; c.className="btn ghost"; c.style.marginLeft="6px"; c.textContent="Cancelar"; btn.parentElement.appendChild(c); c.onclick=()=>{ this.editingIndex=null; this.clearForm(); if(btn) btn.textContent="Agregar objeto"; c.remove(); }; }
     },
     render(){
-      const box=$("#objetosList");
+      const box=$ID("objetosList");
       if(!this.store.length){ box.innerHTML=""; renderTagHelper(); return; }
       box.innerHTML = `<div class="table"><table><thead><tr>
         <th>#</th><th>Descripción</th><th>Vínculo</th><th>Acción</th>
@@ -389,32 +278,27 @@
           </td>
         </tr>`).join("")
       }</tbody></table></div>`;
-      $$("#objetosList [data-delo]").forEach(b=> b.onclick = ()=>{
-        this.store.splice(parseInt(b.dataset.delo,10),1); this.render();
-      });
-      $$("#objetosList [data-edito]").forEach(b=> b.onclick = ()=>{
-        this.startEdit(parseInt(b.dataset.edito,10));
-      });
+      $$("#objetosList [data-delo]").forEach(b=> b.onclick = ()=>{ this.store.splice(parseInt(b.dataset.delo,10),1); this.render(); });
+      $$("#objetosList [data-edito]").forEach(b=> b.onclick = ()=>{ this.startEdit(parseInt(b.dataset.edito,10)); });
       renderTagHelper();
     }
   };
 
-  // ===== AUTONOMBRE desde Carátula + Fecha + (PU) =====
+  // ===== AUTONOMBRE =====
   let __lastAutoName = "";
-
   function autoCaseNameFromCaratula() {
-    const car = (document.getElementById("g_car").value || "").trim();
-    const d   = (document.getElementById("g_fecha_dia").value || "");
+    const car = val("g_car").trim();
+    const d   = val("g_fecha_dia");
     let fechaFmt = "";
     if (d) { const [y,m,day] = d.split("-"); fechaFmt = `${day}-${m}-${y}`; }
-    const tipo = document.getElementById("g_tipoExp").value || "PU";
-    const num  = (document.getElementById("g_numExp").value || "").trim();
+    const tipo = val("g_tipoExp") || "PU";
+    const num  = val("g_numExp").trim();
     const pu   = num ? `${tipo} ${num}` : "";
     const partes = [car || "Hecho", fechaFmt, pu ? `(${pu})` : ""].filter(Boolean);
     return partes.join(" – ");
   }
   function refreshAutoCaseName() {
-    const inp = document.getElementById("caseName");
+    const inp = $ID("caseName");
     if (!inp) return;
     if (!inp.value.trim() || inp.value.trim() === __lastAutoName) {
       const nuevo = autoCaseNameFromCaratula();
@@ -423,16 +307,15 @@
     }
   }
 
-  // ===== Build data from form =====
+  // ===== Build data =====
   function resolvedDependencia(){
-    const val = $("#g_dep").value;
-    if(val==="__manual__") return $("#g_dep_manual").value.trim();
-    return val;
+    const v = val("g_dep");
+    if(v==="__manual__") return val("g_dep_manual").trim();
+    return v;
   }
-
   function buildDataFromForm(){
-    const tipo = $("#g_tipoExp").value || "PU";
-    const num  = ($("#g_numExp").value||"").trim();
+    const tipo = val("g_tipoExp") || "PU";
+    const num  = val("g_numExp").trim();
     const puFull = num ? `${tipo} ${num}` : "";
 
     return {
@@ -441,104 +324,93 @@
         pu: puFull,
         tipoExp: tipo,
         numExp: num,
-        partido: $("#g_partido").value,
-        localidad: $("#g_localidad").value,
+        partido: val("g_partido"),
+        localidad: val("g_localidad"),
         dependencia: resolvedDependencia(),
-        caratula: $("#g_car").value.trim(),
-        subtitulo: $("#g_sub").value.trim(),
-        esclarecido: $("#g_ok").value==="si",
-        ufi: $("#g_ufi").value.trim(),
-        coordenadas: $("#g_coord").value.trim(),
-        relevante: $("#g_relevante").checked,
-        supervisado: $("#g_supervisado").checked
+        caratula: val("g_car").trim(),
+        subtitulo: val("g_sub").trim(),
+        esclarecido: val("g_ok")==="si",
+        ufi: val("g_ufi").trim(),
+        coordenadas: val("g_coord").trim(),
+        relevante: chk("g_relevante"),
+        supervisado: chk("g_supervisado")
       },
       civiles: CIV.store.slice(),
       fuerzas: FZA.store.slice(),
       objetos: OBJ.store.slice(),
-      cuerpo: $("#cuerpo").value
+      cuerpo: val("cuerpo")
     };
   }
 
   // ===== Título compuesto =====
   function renderTitlePreview(){
-    const tipo = $("#g_tipoExp").value || "PU";
-    const num  = ($("#g_numExp").value||"").trim();
+    const tipo = val("g_tipoExp") || "PU";
+    const num  = val("g_numExp").trim();
     const puFmt = num ? `${tipo} ${num}` : "";
     const dep  = resolvedDependencia();
 
-    const parts = [ formattedFecha(), puFmt, dep, $("#g_car").value ].filter(Boolean);
+    const parts = [ formattedFecha(), puFmt, dep, val("g_car") ].filter(Boolean);
     const t = parts.join(" – ");
 
-    const sub = $("#g_sub").value; const ok = ($("#g_ok").value==="si");
-    $("#tituloCompuesto").innerHTML = `<strong>${t.toUpperCase()}</strong>`;
-    $("#subCompuesto").innerHTML = `<span class="badge ${ok?'blue':'red'}"><strong>${sub}</strong></span>`;
+    const sub = val("g_sub"); const ok = (val("g_ok")==="si");
+    $ID("tituloCompuesto") && ($ID("tituloCompuesto").innerHTML = `<strong>${t.toUpperCase()}</strong>`);
+    $ID("subCompuesto")    && ($ID("subCompuesto").innerHTML    = `<span class="badge ${ok?'blue':'red'}"><strong>${sub}</strong></span>`);
   }
 
   // ===== Preview / acciones =====
   function preview(){
     const data = buildDataFromForm();
     const out = HRFMT.buildAll(data);
-    $("#previewHtml").innerHTML = out.html;
+    $ID("previewHtml") && ($ID("previewHtml").innerHTML = out.html);
     return out;
   }
 
   // ===== Eventos =====
   ["g_fecha_dia","g_numExp","g_tipoExp","g_car","g_sub","g_ok","g_ufi","g_coord","g_relevante","g_supervisado","g_dep_manual"].forEach(id=>{
-    const n=document.getElementById(id); 
-    if(n) n.addEventListener("input", ()=>{ 
+    const n = $ID(id);
+    if(!n) return;
+    n.addEventListener("input", ()=>{ 
       renderTitlePreview(); 
       if (id==="g_car" || id==="g_fecha_dia" || id==="g_tipoExp" || id==="g_numExp") refreshAutoCaseName();
     });
-    if(n && n.type==="checkbox") n.addEventListener("change", renderTitlePreview);
+    if(n.type==="checkbox") n.addEventListener("change", renderTitlePreview);
   });
+  $ID("g_partido")?.addEventListener("change", ()=>{ loadLocalidadesAndDeps(); renderTitlePreview(); });
+  $ID("g_localidad")?.addEventListener("change", renderTitlePreview);
+  $ID("g_dep")?.addEventListener("change", renderTitlePreview);
 
-  $("#g_partido").addEventListener("change", ()=>{ loadLocalidadesAndDeps(); renderTitlePreview(); });
-  $("#g_localidad").addEventListener("change", renderTitlePreview);
-  $("#g_dep").addEventListener("change", renderTitlePreview);
+  const bind = (id,fn)=>{ const n=$ID(id); if(n) n.onclick=fn; };
 
-  // Botones
-  bindClick("addCivil",  ()=> CIV.addOrUpdate());
-  bindClick("addFuerza", ()=> FZA.addOrUpdate());
-  bindClick("addObjeto", ()=> OBJ.addOrUpdate());
+  bind("addCivil",  ()=> CIV.addOrUpdate());
+  bind("addFuerza", ()=> FZA.addOrUpdate());
+  bind("addObjeto", ()=> OBJ.addOrUpdate());
 
-  bindClick("generar",   ()=>{ preview(); });
+  bind("generar",   ()=>{ preview(); });
   document.addEventListener("keydown",(e)=>{ if(e.ctrlKey && e.key==="Enter"){ e.preventDefault(); preview(); } });
 
-  bindClick("copiarWA", ()=>{ const out=preview(); navigator.clipboard.writeText(out.waLong).then(()=>alert("Copiado para WhatsApp")); });
+  bind("copiarWA", ()=>{ const out=preview(); navigator.clipboard.writeText(out.waLong).then(()=>alert("Copiado para WhatsApp")); });
 
-  bindClick("descargarWord", async ()=>{
+  bind("descargarWord", async ()=>{
     try{ await HRFMT.downloadDocx(buildDataFromForm(), (window.docx||{})); }
     catch(e){ console.error(e); showErr(e.message||e); }
   });
 
-  bindClick("exportCSV1", ()=>{ HRFMT.downloadCSV([buildDataFromForm()]); });
+  bind("exportCSV1", ()=>{ HRFMT.downloadCSV([buildDataFromForm()]); });
 
-  // Borrar todo (form actual)
-  bindClick("clearAll", ()=>{
+  bind("clearAll", ()=>{
     if(!confirm("¿Borrar todos los campos del formulario actual? Esto no borra los 'Hechos guardados'.")) return;
 
-    $("#g_fecha_dia").value="";
-    $("#g_tipoExp").value="PU";
-    $("#g_numExp").value="";
-    $("#g_partido").value="";
-    loadLocalidadesAndDeps();
-    $("#g_localidad").value="";
-    $("#g_dep").value="";
-    $("#g_dep_manual").value="";
-    $("#g_dep_manual_wrap").style.display="none";
-    $("#g_car").value="";
-    $("#g_sub").value="";
-    $("#g_ok").value="no";
-    $("#g_ufi").value="";
-    $("#g_coord").value="";
-    $("#g_relevante").checked=false;
-    $("#g_supervisado").checked=false;
+    setv("g_fecha_dia",""); setv("g_tipoExp","PU"); setv("g_numExp","");
+    setv("g_partido",""); loadLocalidadesAndDeps(); setv("g_localidad","");
+    setv("g_dep",""); setv("g_dep_manual",""); styleShow("g_dep_manual_wrap",false);
+    setv("g_car",""); setv("g_sub",""); setv("g_ok","no"); setv("g_ufi",""); setv("g_coord","");
+    setchk("g_relevante",false); setchk("g_supervisado",false);
 
     CIV.store=[]; FZA.store=[]; OBJ.store=[];
     CIV.clearForm(); FZA.clearForm(); OBJ.clearForm();
     CIV.render(); FZA.render(); OBJ.render();
 
-    $("#cuerpo").value="";
+    setv("cuerpo","");
 
     renderTitlePreview();
     renderTagHelper();
@@ -549,8 +421,8 @@
   const selectedRadio = ()=> { const r = document.querySelector('input[name="caseSel"]:checked'); return r ? r.getAttribute("data-id") : null; };
   const selectedChecks = ()=> $$(".caseCheck:checked").map(x=>x.getAttribute("data-id"));
 
-  bindClick("saveCase", ()=>{
-    const nameInput = (document.getElementById("caseName").value || "").trim();
+  bind("saveCase", ()=>{
+    const nameInput = (val("caseName") || "").trim();
     const name = nameInput || autoCaseNameFromCaratula();
 
     const snap = buildDataFromForm(); 
@@ -562,11 +434,11 @@
     alert("Guardado.");
   });
 
-  bindClick("updateCase", ()=>{
+  bind("updateCase", ()=>{
     const id = selectedRadio(); if(!id){ alert("Elegí un hecho (radio) para actualizar."); return; }
     const cases = getCases(); const idx = cases.findIndex(c=>c.id===id); if(idx<0){ alert("No encontrado"); return; }
 
-    const nameInput = (document.getElementById("caseName").value || "").trim();
+    const nameInput = (val("caseName") || "").trim();
     const name = nameInput || autoCaseNameFromCaratula();
 
     const snap = buildDataFromForm(); 
@@ -578,29 +450,28 @@
     alert("Actualizado.");
   });
 
-  bindClick("deleteCase", ()=>{
+  bind("deleteCase", ()=>{
     const id = selectedRadio(); if(!id){ alert("Elegí un hecho (radio) para borrar."); return; }
     const cases = getCases().filter(c=>c.id!==id); setCases(cases); renderCases();
   });
 
-  bindClick("loadSelected", ()=>{
+  bind("loadSelected", ()=>{
     const id = selectedRadio(); if(!id){ alert("Elegí un hecho (radio) para cargar."); return; }
     const c = getCases().find(x=>x.id===id); if(!c){ alert("No encontrado"); return; }
     loadSnapshot(c); renderCases(); preview(); alert("Cargado.");
   });
 
-  bindClick("exportCSV", ()=>{
+  bind("exportCSV", ()=>{
     const ids = selectedChecks(); if(!ids.length){ alert("Seleccioná al menos un hecho (checkbox)."); return; }
     const list = getCases().filter(c=>ids.includes(c.id));
     HRFMT.downloadCSV(list);
   });
 
-  bindClick("downloadWordMulti", async ()=>{
+  bind("downloadWordMulti", async ()=>{
     const ids = selectedChecks(); if(!ids.length){ alert("Seleccioná al menos un hecho (checkbox)."); return; }
     const docx = window.docx||{}; const { Document, Packer, TextRun, Paragraph, AlignmentType } = docx;
     if(!Document){ showErr("docx no cargada"); return; }
 
-    const JUST = AlignmentType.JUSTIFIED;
     const toRuns = (html)=>{
       const parts=(html||"").split(/(<\/?strong>|<\/?em>|<\/?u>)/g);
       let B=false,I=false,U=false; const runs=[];
@@ -616,6 +487,7 @@
       return runs;
     };
 
+    const JUST = AlignmentType.JUSTIFIED;
     const selected = getCases().filter(c=>ids.includes(c.id));
     const children = [];
     selected.forEach((snap,i)=>{
@@ -623,7 +495,7 @@
       children.push(new Paragraph({ children:[ new TextRun({ text: built.forDocx.titulo, bold:true }) ] }));
       children.push(new Paragraph({ children:[ new TextRun({ text: built.forDocx.subtitulo, bold:true, color: built.forDocx.color }) ] }));
       (built.forDocx.bodyHtml||"").split(/\n\n+/).forEach(p=>{
-        children.push(new Paragraph({ children: toRuns(p), alignment: AlignmentType.JUSTIFIED, spacing:{after:200} }));
+        children.push(new Paragraph({ children: toRuns(p), alignment: JUST, spacing:{after:200} }));
       });
       if(i !== selected.length-1) children.push(new Paragraph({ text:"" }));
     });
@@ -641,47 +513,43 @@
   function loadSnapshot(s){
     const fh = s.generales?.fecha_hora || "";
     const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(fh);
-    if(m){ $("#g_fecha_dia").value = `${m[3]}-${m[2]}-${m[1]}`; } else { $("#g_fecha_dia").value = ""; }
+    if(m){ setv("g_fecha_dia",`${m[3]}-${m[2]}-${m[1]}`); } else { setv("g_fecha_dia",""); }
 
-    $("#g_tipoExp").value = s.generales?.tipoExp || "PU";
-    $("#g_numExp").value  = s.generales?.numExp || (s.generales?.pu||"").replace(/^.*?\s+/,'').trim();
+    setv("g_tipoExp", s.generales?.tipoExp || "PU");
+    setv("g_numExp",  s.generales?.numExp || (s.generales?.pu||"").replace(/^.*?\s+/,'').trim());
 
-    $("#g_partido").value = s.generales?.partido||"";
+    setv("g_partido", s.generales?.partido||"");
     loadLocalidadesAndDeps();
-    $("#g_localidad").value = s.generales?.localidad||"";
+    setv("g_localidad", s.generales?.localidad||"");
 
     const cat = getCatalogs();
-    const partido = $("#g_partido").value;
+    const partido = val("g_partido");
     const deps = (cat[partido]?.dependencias||[]);
     if (s.generales?.dependencia && !deps.includes(s.generales.dependencia)) {
-      $("#g_dep").value="__manual__";
-      $("#g_dep_manual").value = s.generales.dependencia;
-      $("#g_dep_manual_wrap").style.display="block";
+      setv("g_dep", "__manual__");
+      setv("g_dep_manual", s.generales.dependencia || "");
+      styleShow("g_dep_manual_wrap", true);
     } else {
-      $("#g_dep").value = s.generales?.dependencia||"";
-      $("#g_dep_manual").value="";
-      $("#g_dep_manual_wrap").style.display = ($("#g_dep").value==="__manual__") ? "block" : "none";
+      setv("g_dep", s.generales?.dependencia || "");
+      setv("g_dep_manual", "");
+      styleShow("g_dep_manual_wrap", (val("g_dep")==="__manual__"));
     }
 
-    $("#g_car").value   = s.generales?.caratula||"";
-    $("#g_sub").value   = s.generales?.subtitulo||"";
-    $("#g_ok").value    = s.generales?.esclarecido ? "si" : "no";
-    $("#g_ufi").value   = s.generales?.ufi||"";
-    $("#g_coord").value = s.generales?.coordenadas||"";
-    $("#g_relevante").checked = !!s.generales?.relevante;
-    $("#g_supervisado").checked = !!s.generales?.supervisado;
+    setv("g_car", s.generales?.caratula||"");
+    setv("g_sub", s.generales?.subtitulo||"");
+    setv("g_ok",  s.generales?.esclarecido ? "si" : "no");
+    setv("g_ufi", s.generales?.ufi||"");
+    setv("g_coord", s.generales?.coordenadas||"");
+    setchk("g_relevante", !!s.generales?.relevante);
+    setchk("g_supervisado", !!s.generales?.supervisado);
 
     CIV.store = (s.civiles||[]).slice(); CIV.render();
     FZA.store = (s.fuerzas||[]).slice(); FZA.render();
     OBJ.store = (s.objetos||[]).slice(); OBJ.render();
-    $("#cuerpo").value  = s.cuerpo||"";
+    setv("cuerpo", s.cuerpo||"");
 
-    // Actualizo nombre visible
-    const nameBox = document.getElementById("caseName");
-    if (nameBox) {
-      nameBox.value = s.name || autoCaseNameFromCaratula();
-      __lastAutoName = nameBox.value;
-    }
+    const nameBox = $ID("caseName");
+    if (nameBox) { nameBox.value = s.name || autoCaseNameFromCaratula(); __lastAutoName = nameBox.value; }
 
     renderTitlePreview();
     renderTagHelper();
@@ -697,136 +565,65 @@
     a.download = `hechos_backup_${new Date().toISOString().slice(0,10)}.json`;
     a.click();
   }
-
-  async function importBackupJSON(file) {
-    try {
+  async function importBackupJSON(file, replace=false) {
+    try{
       const text = await file.text();
       const data = JSON.parse(text);
       const incoming = Array.isArray(data?.cases) ? data.cases : (Array.isArray(data) ? data : null);
-      if (!incoming) { alert("No encontré 'cases' en el JSON."); return; }
+      if(!incoming){ alert("No encontré 'cases' en el JSON."); return; }
 
-      const replaceAll = confirm("¿Querés REEMPLAZAR todo lo guardado por el contenido del archivo?\nAceptar = Reemplazar todo\nCancelar = Fusionar (agrega sin duplicar)");
-      if (replaceAll) {
-        setCases(incoming);
-        renderCases();
-        alert(`Restauración completa: ${incoming.length} hechos.`);
-        return;
+      if(replace){
+        setCases(incoming); renderCases(); alert(`Restauración completa: ${incoming.length} hechos.`); return;
       }
-
       const current = getCases();
-      const existingIds = new Set(current.map(c => c.id));
-      let added = 0, skipped = 0;
-
-      incoming.forEach(item => {
-        if (!item || typeof item !== "object") { skipped++; return; }
-        if (!item.id) item.id = freshId();
-        if (!item.name) item.name = "Hecho importado";
-        if (existingIds.has(item.id)) { skipped++; }
-        else { current.push(item); existingIds.add(item.id); added++; }
+      const ids = new Set(current.map(c=>c.id));
+      let added=0, skipped=0;
+      incoming.forEach(it=>{
+        if(!it || typeof it!=="object"){ skipped++; return; }
+        if(!it.id) it.id=freshId();
+        if(!it.name) it.name="Hecho importado";
+        if(ids.has(it.id)) skipped++; else { current.push(it); ids.add(it.id); added++; }
       });
-
-      setCases(current);
-      renderCases();
+      setCases(current); renderCases();
       alert(`Fusión completa: agregados ${added}, saltados ${skipped}.`);
-    } catch (e) {
-      console.error(e);
-      alert("No se pudo leer el archivo JSON.");
-    }
+    }catch(e){ console.error(e); alert("No se pudo leer el archivo JSON."); }
   }
-
-  async function mergeBackupJSON(file) {
-    try {
-      const text = await file.text();
-      const data = JSON.parse(text);
-      const incoming = Array.isArray(data?.cases) ? data.cases : (Array.isArray(data) ? data : null);
-      if (!incoming) { alert("No encontré 'cases' en el JSON."); return; }
-
-      const current = getCases();
-      const existingIds = new Set(current.map(c => c.id));
-      let added = 0, skipped = 0;
-
-      incoming.forEach(item => {
-        if (!item || typeof item !== "object") { skipped++; return; }
-        if (!item.id) item.id = freshId();
-        if (!item.name) item.name = "Hecho importado";
-        if (existingIds.has(item.id)) { skipped++; }
-        else { current.push(item); existingIds.add(item.id); added++; }
-      });
-
-      setCases(current);
-      renderCases();
-      alert(`Fusionado: agregados ${added}, saltados ${skipped}.`);
-    } catch (e) {
-      console.error(e);
-      alert("No se pudo leer el archivo JSON.");
-    }
-  }
-
-  bindClick("backupJSON", ()=> exportBackupJSON());
-
-  bindClick("restoreJSON", ()=>{
-    const input = document.getElementById("restoreFile");
-    if (!input) return;
-    input.value = "";
-    input.click();
+  bind("backupJSON", ()=> exportBackupJSON());
+  bind("restoreJSON", ()=>{
+    const input=$ID("restoreFile"); if(!input) return; input.value=""; input.click();
+    input.onchange=()=>{ if(input.files?.[0]) importBackupJSON(input.files[0], confirm("¿Reemplazar todo lo guardado por el archivo?\nAceptar = Reemplazar • Cancelar = Fusionar")); };
   });
-  const restoreInput = document.getElementById("restoreFile");
-  if (restoreInput) {
-    restoreInput.addEventListener("change", ()=>{
-      if (restoreInput.files && restoreInput.files[0]) {
-        importBackupJSON(restoreInput.files[0]);
-      }
-    });
-  }
-
-  bindClick("mergeJSON", ()=>{
-    const input = document.getElementById("mergeFile");
-    if (!input) return;
-    input.value = "";
-    input.click();
+  bind("mergeJSON", ()=>{
+    const input=$ID("mergeFile"); if(!input) return; input.value=""; input.click();
+    input.onchange=()=>{ if(input.files?.[0]) importBackupJSON(input.files[0], false); };
   });
-  const mergeInput = document.getElementById("mergeFile");
-  if (mergeInput) {
-    mergeInput.addEventListener("change", ()=>{
-      if (mergeInput.files && mergeInput.files[0]) {
-        mergeBackupJSON(mergeInput.files[0]);
-      }
-    });
-  }
 
   // ===== Catálogos UI =====
   function cat_loadIntoEditor(){
     const cat = getCatalogs();
-    const partido = $("#cat_partidoSel").value;
+    const partido = val("cat_partidoSel") || "General Pueyrredon";
     const locs = (cat[partido]?.localidades||[]).join("\n");
     const deps = (cat[partido]?.dependencias||[]).join("\n");
-    $("#cat_localidades").value = locs;
-    $("#cat_dependencias").value = deps;
+    setv("cat_localidades", locs);
+    setv("cat_dependencias", deps);
   }
-  bindClick("cat_guardar", ()=>{
-    const partido = $("#cat_partidoSel").value;
-    const cat = getCatalogs();
-    cat[partido] = {
-      localidades: $("#cat_localidades").value.split("\n").map(s=>s.trim()).filter(Boolean),
-      dependencias: $("#cat_dependencias").value.split("\n").map(s=>s.trim()).filter(Boolean)
-    };
-    setCatalogs(cat);
-    if($("#g_partido").value===partido){ loadLocalidadesAndDeps(); renderTitlePreview(); }
-    alert("Catálogos guardados.");
-  });
-  bindClick("cat_reset", ()=>{
-    setCatalogs(DEFAULT_CATALOGS);
-    cat_loadIntoEditor();
-    if($("#g_partido").value){ loadLocalidadesAndDeps(); renderTitlePreview(); }
-    alert("Restaurados valores de ejemplo.");
-  });
-  $("#cat_partidoSel").addEventListener("change", cat_loadIntoEditor);
+  const cat_guardar=()=>{ const partido=val("cat_partidoSel")||"General Pueyrredon"; const cat=getCatalogs();
+    cat[partido]={ localidades: val("cat_localidades").split("\n").map(s=>s.trim()).filter(Boolean),
+                   dependencias: val("cat_dependencias").split("\n").map(s=>s.trim()).filter(Boolean) };
+    setCatalogs(cat); if(val("g_partido")===partido){ loadLocalidadesAndDeps(); renderTitlePreview(); } alert("Catálogos guardados."); };
+  const cat_reset=()=>{ setCatalogs(DEFAULT_CATALOGS); cat_loadIntoEditor(); if(val("g_partido")){ loadLocalidadesAndDeps(); renderTitlePreview(); } alert("Restaurados valores de ejemplo."); };
+  $ID("cat_partidoSel")?.addEventListener("change", cat_loadIntoEditor);
+  $ID("cat_guardar")?.addEventListener("click", cat_guardar);
+  $ID("cat_reset")?.addEventListener("click", cat_reset);
 
   // ===== Init =====
-  renderCases();
-  loadLocalidadesAndDeps();
-  renderTitlePreview();
-  renderTagHelper();
-  cat_loadIntoEditor();
-  refreshAutoCaseName();   // AUTONOMBRE inicial
+  document.addEventListener("DOMContentLoaded", ()=>{
+    renderCases();
+    loadLocalidadesAndDeps();
+    renderTitlePreview();
+    renderTagHelper();
+    cat_loadIntoEditor();
+    refreshAutoCaseName();
+  });
 })();
+
