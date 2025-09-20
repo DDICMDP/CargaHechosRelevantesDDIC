@@ -41,4 +41,14 @@ textarea.bigtext{min-height:320px;font-size:16px;line-height:1.45}
 /* ---- Editor ancho total ---- */
 #cuerpo{ width:100%; max-width:100%; display:block; }
 #cuerpo.bigtext{ min-height:420px; }   /* (opcional) un poquito más alto */
+/* === Editor de cuerpo ancho completo === */
+.card textarea#cuerpo {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: 400px;   /* más alto */
+  display: block;
+  box-sizing: border-box; /* que no se achique con padding */
+  font-family: monospace; /* opcional, se ve tipo editor */
+}
+
 
