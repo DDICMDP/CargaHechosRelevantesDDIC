@@ -4,8 +4,8 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Hechos Relevantes</title>
-  <link rel="stylesheet" href="assets/styles.css?v=10"/>
-  <link rel="stylesheet" href="assets/tabs.css?v=10"/>
+  <link rel="stylesheet" href="assets/styles.css?v=11"/>
+  <link rel="stylesheet" href="assets/tabs.css?v=11"/>
 </head>
 <body>
   <header class="hero">
@@ -18,7 +18,7 @@
   <main class="wrap">
     <div id="errorBox" class="alert" hidden></div>
 
-    <!-- Casos guardados -->
+    <!-- 0) Hechos guardados -->
     <section class="card">
       <h2>0) Hechos guardados</h2>
       <div class="grid">
@@ -44,21 +44,20 @@
 
       <div id="casesList" class="preview" style="max-height:220px;overflow:auto">Sin hechos guardados.</div>
 
-      <div class="row" style="margin-top:10px">
+      <div class="row" style="margin-top:10px;flex-wrap:wrap;gap:8px">
         <button class="btn ghost" id="loadSelected">Cargar seleccionado</button>
         <button class="btn success" id="exportCSV">Exportar CSV (seleccionados)</button>
         <button class="btn success" id="downloadWordMulti">Descargar Word (seleccionados)</button>
 
-        <!-- Respaldo / restauración -->
         <button class="btn ghost" id="backupJSON">Respaldar (JSON)</button>
         <button class="btn ghost" id="restoreJSON">Restaurar (JSON)</button>
         <button class="btn ghost" id="mergeJSON">Fusionar (JSON) directo</button>
         <input type="file" id="restoreFile" accept="application/json" style="display:none"/>
-        <input type="file" id="mergeFile" accept="application/json" style="display:none"/>
+        <input type="file" id="mergeFile"   accept="application/json" style="display:none"/>
       </div>
     </section>
 
-    <!-- TABS -->
+    <!-- 1) Carga de datos -->
     <section class="card">
       <h2>1) Carga de datos</h2>
 
@@ -188,7 +187,7 @@
             <label>Jerarquía <input id="f_jerarquia"></label>
             <label>Destino <input id="f_destino"></label>
             <label>Localidad domicilio <input id="f_loc"></label>
-            <label>Calle domicilio <input id="f_calle"></label>
+            <label>Calle domicilio <input id="f_calle"></input></label>
             <label>Vínculo
               <select id="f_vinculo">
                 <option>Imputado</option>
@@ -230,7 +229,7 @@
 
         <!-- Catálogos -->
         <div class="tab-panel" id="t-catalogos">
-          <p class="small">Editá los catálogos por Partido. Un ítem por línea. Guardá para aplicar en los desplegables.</p>
+          <p class="small">Editá por Partido. Un ítem por línea. Guardá para aplicar en los desplegables.</p>
           <div class="grid">
             <label>Partido
               <select id="cat_partidoSel">
@@ -254,21 +253,21 @@
             <button class="btn ghost" id="cat_reset">Restaurar valores de ejemplo</button>
           </div>
         </div>
-
       </div>
     </section>
 
-    <!-- Cuerpo -->
+    <!-- 2) Resumen -->
     <section class="card">
       <h2>2) Resumen / Cuerpo</h2>
       <textarea id="cuerpo" rows="10" placeholder="Redactá el cuerpo. Ej.: &#10;Fecha... entrevistan con #victima:0 ... sustrayendo #secuestro:0 ..."></textarea>
       <p class="hint">
-        Estilos rápidos: <code>*negrita*</code>, <code>_itálica_</code> (se usa en objetos), <code>!subrayado!</code>.
+        Estilos rápidos: <code>*negrita*</code>, <code>_itálica_</code> (se usa en objetos), <code>!subrayado!</code>.<br/>
+        Etiquetas disponibles:
       </p>
       <div id="tagHelper" class="chips"></div>
     </section>
 
-    <!-- Salidas -->
+    <!-- 3) Salidas -->
     <section class="card">
       <h2>3) Salidas</h2>
       <div class="row">
@@ -285,11 +284,14 @@
 
   <footer class="foot"><span>Ctrl + Enter = Generar</span></footer>
 
+  <!-- Librería DOCX -->
   <script defer src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js"></script>
-  <script defer src="assets/formatter.js?v=10"></script>
-  <script defer src="assets/tabs.js?v=10"></script>
-  <script defer src="assets/app.js?v=10"></script>
+  <!-- App -->
+  <script defer src="assets/formatter.js?v=11"></script>
+  <script defer src="assets/tabs.js?v=11"></script>
+  <script defer src="assets/app.js?v=11"></script>
 </body>
 </html>
+
 
 
