@@ -4,8 +4,8 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Hechos Relevantes</title>
-  <link rel="stylesheet" href="assets/styles.css?v=11"/>
-  <link rel="stylesheet" href="assets/tabs.css?v=11"/>
+  <link rel="stylesheet" href="assets/styles.css?v=12"/>
+  <link rel="stylesheet" href="assets/tabs.css?v=12"/>
 </head>
 <body>
   <header class="hero">
@@ -259,7 +259,7 @@
     <!-- 2) Resumen -->
     <section class="card">
       <h2>2) Resumen / Cuerpo</h2>
-      <textarea id="cuerpo" rows="10" placeholder="Redactá el cuerpo. Ej.: &#10;Fecha... entrevistan con #victima:0 ... sustrayendo #secuestro:0 ..."></textarea>
+      <textarea id="cuerpo" class="bigtext" rows="16" placeholder="Redactá el cuerpo. Ej.: &#10;Fecha... entrevistan con #victima:0 ... sustrayendo #secuestro:0 ..."></textarea>
       <p class="hint">
         Estilos rápidos: <code>*negrita*</code>, <code>_itálica_</code> (se usa en objetos), <code>!subrayado!</code>.<br/>
         Etiquetas disponibles:
@@ -270,9 +270,13 @@
     <!-- 3) Salidas -->
     <section class="card">
       <h2>3) Salidas</h2>
-      <div class="row">
+      <div class="row" style="flex-wrap:wrap;gap:10px;align-items:center">
         <button class="btn" id="generar">Generar vista previa</button>
         <button class="btn ghost" id="copiarWA">Copiar WhatsApp</button>
+        <label class="row small" style="gap:8px;align-items:center">
+          <input type="checkbox" id="wa_merge" checked/>
+          <span>Unir renglones para WhatsApp (deja doble Enter como párrafo)</span>
+        </label>
         <button class="btn success" id="descargarWord">Descargar Word</button>
         <button class="btn success" id="exportCSV1">Exportar CSV (este)</button>
         <button class="btn ghost" id="clearAll">Borrar todo (limpiar formulario)</button>
@@ -287,11 +291,8 @@
   <!-- Librería DOCX -->
   <script defer src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js"></script>
   <!-- App -->
-  <script defer src="assets/formatter.js?v=11"></script>
-  <script defer src="assets/tabs.js?v=11"></script>
-  <script defer src="assets/app.js?v=11"></script>
+  <script defer src="assets/formatter.js?v=12"></script>
+  <script defer src="assets/tabs.js?v=12"></script>
+  <script defer src="assets/app.js?v=12"></script>
 </body>
 </html>
-
-
-
