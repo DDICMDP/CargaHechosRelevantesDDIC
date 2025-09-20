@@ -4,8 +4,8 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Hechos Relevantes</title>
-  <link rel="stylesheet" href="assets/styles.css?v=7"/>
-  <link rel="stylesheet" href="assets/tabs.css?v=7"/>
+  <link rel="stylesheet" href="assets/styles.css?v=8"/>
+  <link rel="stylesheet" href="assets/tabs.css?v=8"/>
 </head>
 <body>
   <header class="hero">
@@ -95,19 +95,27 @@
 
           <div class="grid">
             <label>Dependencia
-              <select id="g_dep"></select>
+              <select id="g_dep">
+                <option value="">— Elegir —</option>
+                <!-- opciones dinámicas por partido -->
+                <option value="__manual__">Escribir manualmente…</option>
+              </select>
             </label>
+            <label id="g_dep_manual_wrap" style="display:none">Dependencia (manual)
+              <input id="g_dep_manual" placeholder="Ej.: Subcomisaría Camet"/>
+            </label>
+
             <label>Carátula <input id="g_car" placeholder="Robo agravado en poblado en banda y por el uso de arma de fuego"></label>
             <label>Subtítulo <input id="g_sub" placeholder="Entradera"></label>
+          </div>
+
+          <div class="grid">
             <label>Estado
               <select id="g_ok">
                 <option value="no">No esclarecido (Rojo)</option>
                 <option value="si">Esclarecido (Azul)</option>
               </select>
             </label>
-          </div>
-
-          <div class="grid">
             <label>UFI / Intervención <input id="g_ufi" placeholder="UFI 10 Dr. Pérez"></label>
             <label>Coordenadas <input id="g_coord" placeholder="-38.000, -57.555"></label>
             <label class="row" style="align-items:center;gap:10px">
@@ -141,9 +149,16 @@
             <label>Calle domicilio <input id="c_calle"></label>
             <label>Vínculo
               <select id="c_vinculo">
-                <option>Victima</option><option>Imputado</option><option>Denunciante</option>
-                <option>Testigo</option><option>PP</option><option>Aprehendido</option>
-                <option>Detenido</option><option>Menor</option><option>NN</option>
+                <option>Victima</option>
+                <option>Imputado</option>
+                <option>Sindicado</option>
+                <option>Denunciante</option>
+                <option>Testigo</option>
+                <option>PP</option>
+                <option>Aprehendido</option>
+                <option>Detenido</option>
+                <option>Menor</option>
+                <option>NN</option>
                 <option>Damnificado institucional</option>
               </select>
             </label>
@@ -171,7 +186,12 @@
             <label>Calle domicilio <input id="f_calle"></label>
             <label>Vínculo
               <select id="f_vinculo">
-                <option>Imputado</option><option>Testigo</option><option>Denunciante</option><option>Victima</option><option>PP</option>
+                <option>Imputado</option>
+                <option>Sindicado</option>
+                <option>Testigo</option>
+                <option>Denunciante</option>
+                <option>Victima</option>
+                <option>PP</option>
               </select>
             </label>
             <label>¿Óbito?
@@ -252,6 +272,7 @@
         <button class="btn ghost" id="copiarWA">Copiar WhatsApp</button>
         <button class="btn success" id="descargarWord">Descargar Word</button>
         <button class="btn success" id="exportCSV1">Exportar CSV (este)</button>
+        <button class="btn ghost" id="clearAll">Borrar todo (limpiar formulario)</button>
       </div>
       <h3>Vista previa HTML</h3>
       <div id="previewHtml" class="preview"></div>
@@ -261,10 +282,9 @@
   <footer class="foot"><span>Ctrl + Enter = Generar</span></footer>
 
   <script defer src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js"></script>
-  <script defer src="assets/formatter.js?v=7"></script>
-  <script defer src="assets/tabs.js?v=7"></script>
-  <script defer src="assets/app.js?v=7"></script>
+  <script defer src="assets/formatter.js?v=8"></script>
+  <script defer src="assets/tabs.js?v=8"></script>
+  <script defer src="assets/app.js?v=8"></script>
 </body>
 </html>
-
 
