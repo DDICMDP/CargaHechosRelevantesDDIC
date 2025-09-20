@@ -16,6 +16,14 @@
     if(p.trim()===""||p==='-') return p; return p.charAt(0).toUpperCase()+p.slice(1);
   }).join("");
 
+  // ==== Fecha (solo dd-mm-aaaa en título) ====
+  function formattedFecha(){
+    const d = $("#g_fecha_dia").value;
+    if(!d) return "";
+    const [y,m,day] = d.split("-");
+    return `${day}-${m}-${y}`;
+  }
+
   // ===== Catálogos (seed + persistencia) =====
   const DEFAULT_CATALOGS = {
     "General Pueyrredon": {
@@ -81,6 +89,20 @@
         <td>${c.generales?.dependencia||''}</td>
       </tr>`).join("")
     }</tbody></table>`;
+    attachCaseSearch();
+  }
+
+  // ===== Buscador en la tabla =====
+  function attachCaseSearch() {
+    const input = document.getElementById("caseSearch");
+    const box = document.getElementById("casesList");
+    if (!input || !box) return;
+    input.oninput = () => {
+      const q = input.value.toLowerCase();
+      box.querySelectorAll("tbody tr").forEach(tr=>{
+        tr.style.display = tr.textContent.toLowerCase().includes(q) ? "" : "none";
+      });
+    };
   }
 
   // ===== Desplegables dependientes =====
@@ -377,6 +399,30 @@
     }
   };
 
+  // ===== AUTONOMBRE desde Carátula + Fecha + (PU) =====
+  let __lastAutoName = "";
+
+  function autoCaseNameFromCaratula() {
+    const car = (document.getElementById("g_car").value || "").trim();
+    const d   = (document.getElementById("g_fecha_dia").value || "");
+    let fechaFmt = "";
+    if (d) { const [y,m,day] = d.split("-"); fechaFmt = `${day}-${m}-${y}`; }
+    const tipo = document.getElementById("g_tipoExp").value || "PU";
+    const num  = (document.getElementById("g_numExp").value || "").trim();
+    const pu   = num ? `${tipo} ${num}` : "";
+    const partes = [car || "Hecho", fechaFmt, pu ? `(${pu})` : ""].filter(Boolean);
+    return partes.join(" – ");
+  }
+  function refreshAutoCaseName() {
+    const inp = document.getElementById("caseName");
+    if (!inp) return;
+    if (!inp.value.trim() || inp.value.trim() === __lastAutoName) {
+      const nuevo = autoCaseNameFromCaratula();
+      inp.value = nuevo;
+      __lastAutoName = nuevo;
+    }
+  }
+
   // ===== Build data from form =====
   function resolvedDependencia(){
     const val = $("#g_dep").value;
@@ -391,7 +437,7 @@
 
     return {
       generales: {
-        fecha_hora: $("#g_fecha").value.trim(),
+        fecha_hora: formattedFecha(),
         pu: puFull,
         tipoExp: tipo,
         numExp: num,
@@ -413,14 +459,14 @@
     };
   }
 
-  // ===== Título compuesto (usa dependencia resuelta) =====
+  // ===== Título compuesto =====
   function renderTitlePreview(){
     const tipo = $("#g_tipoExp").value || "PU";
     const num  = ($("#g_numExp").value||"").trim();
     const puFmt = num ? `${tipo} ${num}` : "";
     const dep  = resolvedDependencia();
 
-    const parts = [ $("#g_fecha").value, puFmt, dep, $("#g_car").value ].filter(Boolean);
+    const parts = [ formattedFecha(), puFmt, dep, $("#g_car").value ].filter(Boolean);
     const t = parts.join(" – ");
 
     const sub = $("#g_sub").value; const ok = ($("#g_ok").value==="si");
@@ -436,9 +482,13 @@
     return out;
   }
 
-  // ===== Eventos de inputs que actualizan título / combos dependientes =====
-  ["g_fecha","g_numExp","g_tipoExp","g_car","g_sub","g_ok","g_ufi","g_coord","g_relevante","g_supervisado","g_dep_manual"].forEach(id=>{
-    const n=document.getElementById(id); if(n) n.addEventListener("input", renderTitlePreview);
+  // ===== Eventos =====
+  ["g_fecha_dia","g_numExp","g_tipoExp","g_car","g_sub","g_ok","g_ufi","g_coord","g_relevante","g_supervisado","g_dep_manual"].forEach(id=>{
+    const n=document.getElementById(id); 
+    if(n) n.addEventListener("input", ()=>{ 
+      renderTitlePreview(); 
+      if (id==="g_car" || id==="g_fecha_dia" || id==="g_tipoExp" || id==="g_numExp") refreshAutoCaseName();
+    });
     if(n && n.type==="checkbox") n.addEventListener("change", renderTitlePreview);
   });
 
@@ -446,7 +496,7 @@
   $("#g_localidad").addEventListener("change", renderTitlePreview);
   $("#g_dep").addEventListener("change", renderTitlePreview);
 
-  // ===== Botones base =====
+  // Botones
   bindClick("addCivil",  ()=> CIV.addOrUpdate());
   bindClick("addFuerza", ()=> FZA.addOrUpdate());
   bindClick("addObjeto", ()=> OBJ.addOrUpdate());
@@ -463,12 +513,11 @@
 
   bindClick("exportCSV1", ()=>{ HRFMT.downloadCSV([buildDataFromForm()]); });
 
-  // ===== Borrar todo (limpiar formulario actual) =====
+  // Borrar todo (form actual)
   bindClick("clearAll", ()=>{
     if(!confirm("¿Borrar todos los campos del formulario actual? Esto no borra los 'Hechos guardados'.")) return;
 
-    // Generales
-    $("#g_fecha").value="";
+    $("#g_fecha_dia").value="";
     $("#g_tipoExp").value="PU";
     $("#g_numExp").value="";
     $("#g_partido").value="";
@@ -485,16 +534,15 @@
     $("#g_relevante").checked=false;
     $("#g_supervisado").checked=false;
 
-    // Civiles/Fuerzas/Objetos
     CIV.store=[]; FZA.store=[]; OBJ.store=[];
     CIV.clearForm(); FZA.clearForm(); OBJ.clearForm();
     CIV.render(); FZA.render(); OBJ.render();
 
-    // Cuerpo
     $("#cuerpo").value="";
 
     renderTitlePreview();
     renderTagHelper();
+    refreshAutoCaseName();
   });
 
   // ===== CRUD de casos =====
@@ -502,16 +550,32 @@
   const selectedChecks = ()=> $$(".caseCheck:checked").map(x=>x.getAttribute("data-id"));
 
   bindClick("saveCase", ()=>{
-    const name = ($("#caseName").value||"").trim() || "Hecho sin nombre";
-    const snap = buildDataFromForm(); snap.id = freshId(); snap.name=name;
-    const cases = getCases(); cases.push(snap); setCases(cases); renderCases(); alert("Guardado.");
+    const nameInput = (document.getElementById("caseName").value || "").trim();
+    const name = nameInput || autoCaseNameFromCaratula();
+
+    const snap = buildDataFromForm(); 
+    snap.id = freshId(); 
+    snap.name = name;
+
+    const cases = getCases(); cases.push(snap); setCases(cases); renderCases(); 
+    __lastAutoName = name;
+    alert("Guardado.");
   });
 
   bindClick("updateCase", ()=>{
     const id = selectedRadio(); if(!id){ alert("Elegí un hecho (radio) para actualizar."); return; }
     const cases = getCases(); const idx = cases.findIndex(c=>c.id===id); if(idx<0){ alert("No encontrado"); return; }
-    const snap = buildDataFromForm(); snap.id = id; snap.name = cases[idx].name;
-    cases[idx] = snap; setCases(cases); renderCases(); alert("Actualizado.");
+
+    const nameInput = (document.getElementById("caseName").value || "").trim();
+    const name = nameInput || autoCaseNameFromCaratula();
+
+    const snap = buildDataFromForm(); 
+    snap.id = id; 
+    snap.name = name;
+
+    cases[idx] = snap; setCases(cases); renderCases(); 
+    __lastAutoName = name;
+    alert("Actualizado.");
   });
 
   bindClick("deleteCase", ()=>{
@@ -575,7 +639,10 @@
   });
 
   function loadSnapshot(s){
-    $("#g_fecha").value = s.generales?.fecha_hora||"";
+    const fh = s.generales?.fecha_hora || "";
+    const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(fh);
+    if(m){ $("#g_fecha_dia").value = `${m[3]}-${m[2]}-${m[1]}`; } else { $("#g_fecha_dia").value = ""; }
+
     $("#g_tipoExp").value = s.generales?.tipoExp || "PU";
     $("#g_numExp").value  = s.generales?.numExp || (s.generales?.pu||"").replace(/^.*?\s+/,'').trim();
 
@@ -583,7 +650,6 @@
     loadLocalidadesAndDeps();
     $("#g_localidad").value = s.generales?.localidad||"";
 
-    // Dependencia: si no está en lista, seteo "__manual__" y pongo el input
     const cat = getCatalogs();
     const partido = $("#g_partido").value;
     const deps = (cat[partido]?.dependencias||[]);
@@ -609,6 +675,14 @@
     FZA.store = (s.fuerzas||[]).slice(); FZA.render();
     OBJ.store = (s.objetos||[]).slice(); OBJ.render();
     $("#cuerpo").value  = s.cuerpo||"";
+
+    // Actualizo nombre visible
+    const nameBox = document.getElementById("caseName");
+    if (nameBox) {
+      nameBox.value = s.name || autoCaseNameFromCaratula();
+      __lastAutoName = nameBox.value;
+    }
+
     renderTitlePreview();
     renderTagHelper();
   }
@@ -754,4 +828,5 @@
   renderTitlePreview();
   renderTagHelper();
   cat_loadIntoEditor();
+  refreshAutoCaseName();   // AUTONOMBRE inicial
 })();
