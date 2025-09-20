@@ -90,15 +90,32 @@ window.HRFMT = (function(){
     return txt;
   }
 
-  function htmlToWA(html){
-    let s = html||"";
+  // === Copiado a WhatsApp: configurable ===
+  function htmlToWA(html, {mergeSoftBreaks=true} = {}){
+    let s = html || "";
+
+    // marcado -> WA
     s = s.replace(/<em><u>(.*?)<\/u><\/em>/gis, '_$1_');
     s = s.replace(/<u><em>(.*?)<\/em><\/u>/gis, '_$1_');
     s = s.replace(/<strong>(.*?)<\/strong>/gis, '*$1*');
     s = s.replace(/<em>(.*?)<\/em>/gis, '_$1_');
     s = s.replace(/<u>(.*?)<\/u>/gis, '$1');
     s = s.replace(/<[^>]+>/g, '');
-    s = s.replace(/\r/g,'').replace(/\n{3,}/g,'\n\n');
+
+    s = s.replace(/\r/g, '');
+
+    if (mergeSoftBreaks) {
+      s = s.replace(/[ \t]+\n/g, '\n').replace(/\n[ \t]+/g, '\n');
+      s = s.replace(/\n{3,}/g, '\n\n');
+      s = s.replace(/\n\n/g, '<<P>>'); // marcador de párrafo
+      s = s.replace(/\n/g, ' ');       // salto simple -> espacio
+      s = s.replace(/<<P>>/g, '\n\n'); // restaurar párrafos
+      s = s.replace(/[ \t]{2,}/g, ' ');
+    } else {
+      // Mantener saltos tal cual, pero no dejar más de 2 seguidos
+      s = s.replace(/\n{3,}/g, '\n\n');
+    }
+
     return s.trim();
   }
 
@@ -116,9 +133,10 @@ window.HRFMT = (function(){
     const badge = `<span class="badge ${g.esclarecido?'blue':'red'}"><strong>${subt}</strong></span>`;
     const html = `<strong>${titulo.toUpperCase()}</strong>\n${badge}\n${bodyHtml}`;
 
+    const merge = (window.WA_MERGE_SOFTBREAKS !== false); // por defecto true
     const waHeader1 = `*${titulo}*`;
     const waHeader2 = `*${subt}*`;
-    const waBody = htmlToWA(bodyHtml);
+    const waBody = htmlToWA(bodyHtml, {mergeSoftBreaks: merge});
     const waShort = `${waHeader1}\n${waHeader2}`;
     const waLong  = `${waHeader1}\n${waHeader2}\n${waBody}`;
 
@@ -199,5 +217,5 @@ window.HRFMT = (function(){
     a.download=`Hechos_${new Date().toISOString().slice(0,10)}.csv`; a.click();
   }
 
-  return { buildAll, downloadDocx, downloadCSV };
+  return { buildAll, downloadDocx, downloadCSV, htmlToWA };
 })();
