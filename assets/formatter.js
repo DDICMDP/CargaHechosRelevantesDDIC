@@ -113,15 +113,14 @@ window.HRFMT = (function(){
     const subt = g.subtitulo||"";
     const bodyHtml = applyPlaceholders(data.cuerpo||"", data);
 
-    // PEDIDO: el cuerpo va ABAJO del subtítulo, pegado, sin espacio extra.
     const badge = `<span class="badge ${g.esclarecido?'blue':'red'}"><strong>${subt}</strong></span>`;
     const html = `<strong>${titulo.toUpperCase()}</strong>\n${badge}\n${bodyHtml}`;
 
     const waHeader1 = `*${titulo}*`;
     const waHeader2 = `*${subt}*`;
     const waBody = htmlToWA(bodyHtml);
-    const waShort = `${waHeader1}\n${waHeader2}`;          // solo encabezados
-    const waLong  = `${waHeader1}\n${waHeader2}\n${waBody}`; // subtítulo y justo debajo el cuerpo
+    const waShort = `${waHeader1}\n${waHeader2}`;
+    const waLong  = `${waHeader1}\n${waHeader2}\n${waBody}`;
 
     return { html, waShort, waLong, forDocx: { titulo: titulo.toUpperCase(), subtitulo: subt, bodyHtml, color: g.esclarecido ? "2e86ff" : "ff4d4d" } };
   }
@@ -149,7 +148,6 @@ window.HRFMT = (function(){
     const JUST = AlignmentType.JUSTIFIED;
     const paras = (built.forDocx.bodyHtml||"").split(/\n\n+/).map(p=> new Paragraph({ children: toRuns(p), alignment: JUST, spacing:{after:200} }));
 
-    // DOCX: título (negrita), subtítulo (negrita color), y EN EL PÁRRAFO SIGUIENTE el cuerpo (ya viene así).
     const doc = new Document({
       styles: { default:{ document:{ run:{ font:"Arial", size:24 }, paragraph:{ spacing: { after:120 } } } } },
       sections: [{
@@ -170,11 +168,7 @@ window.HRFMT = (function(){
   function downloadCSV(list){
     const header = ["fecha","pu","dependencia","caratula","subtitulo","esclarecido","relevante","supervisado","ufi","partido","localidad","coordenadas","victimas","imputados","denunciantes","secuestro","sustraccion","hallazgo","otro"];
     const rows = [header];
-
-    const getPersons = (data, role)=> {
-      const Title = (s)=> (s||"").toLowerCase().split(/(\s|-)/).map(p=>p.trim()===""||p==='-'?p:p[0].toUpperCase()+p.slice(1)).join("");
-      return peopleByRole(data, role).map(p=>`${Title(p.nombre||"")} ${Title(p.apellido||"")}${p.edad?` (${p.edad})`:""}`.trim()).join(" | ");
-    };
+    const getPersons = (data, role)=> peopleByRole(data, role).map(p=>`${TitleCase(p.nombre||"")} ${TitleCase(p.apellido||"")}${p.edad?` (${p.edad})`:""}`.trim()).join(" | ");
     const getCat = (data, cat)=> objectsByCat(data, cat).join(" | ");
 
     (list||[]).forEach(d=>{
