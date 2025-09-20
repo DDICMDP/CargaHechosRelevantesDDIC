@@ -4,8 +4,8 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Hechos Relevantes</title>
-  <link rel="stylesheet" href="assets/styles.css?v=8"/>
-  <link rel="stylesheet" href="assets/tabs.css?v=8"/>
+  <link rel="stylesheet" href="assets/styles.css?v=10"/>
+  <link rel="stylesheet" href="assets/tabs.css?v=10"/>
 </head>
 <body>
   <header class="hero">
@@ -23,7 +23,7 @@
       <h2>0) Hechos guardados</h2>
       <div class="grid">
         <label>Nombre del hecho
-          <input id="caseName" placeholder="Ej.: Entradera 20-09-2025 (PU 270840)"/>
+          <input id="caseName" placeholder="Se autocompleta con Carátula + Fecha + (PU)"/>
         </label>
         <div class="row" style="align-items:flex-end">
           <button class="btn" id="saveCase">Guardar nuevo</button>
@@ -35,6 +35,13 @@
       <div class="small" style="margin-top:6px">
         Seleccioná 1 (radio) para cargar/actualizar o varios (checkbox) para exportar.
       </div>
+
+      <!-- Buscador -->
+      <div class="row" style="gap:8px;align-items:center;margin-top:8px">
+        <label class="small">Buscar</label>
+        <input id="caseSearch" placeholder="Filtrar por nombre, fecha, PU, dependencia, etc." style="max-width:420px">
+      </div>
+
       <div id="casesList" class="preview" style="max-height:220px;overflow:auto">Sin hechos guardados.</div>
 
       <div class="row" style="margin-top:10px">
@@ -67,9 +74,8 @@
         <!-- Generales -->
         <div class="tab-panel is-active" id="t-generales">
           <div class="grid">
-            <label>Fecha – Hora <input id="g_fecha" placeholder="20-09-2025 – 17:15 hs"></label>
+            <label>Fecha <input type="date" id="g_fecha_dia"></label>
 
-            <!-- Tipo + número => luego en el título se arma 'PU 123' o 'IPP 123' -->
             <label>Tipo expediente
               <select id="g_tipoExp">
                 <option value="PU" selected>PU</option>
@@ -97,7 +103,6 @@
             <label>Dependencia
               <select id="g_dep">
                 <option value="">— Elegir —</option>
-                <!-- opciones dinámicas por partido -->
                 <option value="__manual__">Escribir manualmente…</option>
               </select>
             </label>
@@ -260,7 +265,6 @@
       <p class="hint">
         Estilos rápidos: <code>*negrita*</code>, <code>_itálica_</code> (se usa en objetos), <code>!subrayado!</code>.
       </p>
-      <!-- Asistente de etiquetas -->
       <div id="tagHelper" class="chips"></div>
     </section>
 
@@ -282,9 +286,10 @@
   <footer class="foot"><span>Ctrl + Enter = Generar</span></footer>
 
   <script defer src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js"></script>
-  <script defer src="assets/formatter.js?v=8"></script>
-  <script defer src="assets/tabs.js?v=8"></script>
-  <script defer src="assets/app.js?v=8"></script>
+  <script defer src="assets/formatter.js?v=10"></script>
+  <script defer src="assets/tabs.js?v=10"></script>
+  <script defer src="assets/app.js?v=10"></script>
 </body>
 </html>
+
 
