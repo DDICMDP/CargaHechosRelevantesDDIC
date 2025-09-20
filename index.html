@@ -4,8 +4,8 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Hechos Relevantes</title>
-  <link rel="stylesheet" href="assets/styles.css?v=5"/>
-  <link rel="stylesheet" href="assets/tabs.css?v=5"/>
+  <link rel="stylesheet" href="assets/styles.css?v=6"/>
+  <link rel="stylesheet" href="assets/tabs.css?v=6"/>
 </head>
 <body>
   <header class="hero">
@@ -41,6 +41,13 @@
         <button class="btn ghost" id="loadSelected">Cargar seleccionado</button>
         <button class="btn success" id="exportCSV">Exportar CSV (seleccionados)</button>
         <button class="btn success" id="downloadWordMulti">Descargar Word (seleccionados)</button>
+
+        <!-- NUEVO: respaldo / restauración -->
+        <button class="btn ghost" id="backupJSON">Respaldar (JSON)</button>
+        <button class="btn ghost" id="restoreJSON">Restaurar (JSON)</button>
+        <button class="btn ghost" id="mergeJSON">Fusionar (JSON) directo</button>
+        <input type="file" id="restoreFile" accept="application/json" style="display:none"/>
+        <input type="file" id="mergeFile" accept="application/json" style="display:none"/>
       </div>
     </section>
 
@@ -200,8 +207,9 @@
   <footer class="foot"><span>Ctrl + Enter = Generar</span></footer>
 
   <script defer src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js"></script>
-  <script defer src="assets/formatter.js?v=5"></script>
-  <script defer src="assets/tabs.js?v=5"></script>
-  <script defer src="assets/app.js?v=5"></script>
+  <script defer src="assets/formatter.js?v=6"></script>
+  <script defer src="assets/tabs.js?v=6"></script>
+  <script defer src="assets/app.js?v=6"></script>
 </body>
 </html>
+
