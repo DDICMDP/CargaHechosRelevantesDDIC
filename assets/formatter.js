@@ -17,7 +17,6 @@ window.HRFMT = (function(){
     const base = `${TitleCase(p.nombre||"")} ${TitleCase(p.apellido||"")}`.trim();
     return `<strong>${base}${p.edad?` (${p.edad})`:""}${dom.length?` – ${dom.join(", ")}`:""}</strong>`;
   }
-
   function forceFmt(p){
     const base = `${TitleCase(p.nombre||"")} ${TitleCase(p.apellido||"")}`.trim();
     const edad = p.edad ? ` (${p.edad})` : "";
