@@ -10,10 +10,60 @@
   }
 
   const CASEKEY="hr_cases_v1";
+  const CATKEY ="hr_catalogs_v1";
+
   const TitleCase = (s)=> (s||"").toLowerCase().split(/(\s|-)/).map(p=>{
     if(p.trim()===""||p==='-') return p; return p.charAt(0).toUpperCase()+p.slice(1);
   }).join("");
 
+  // ===== Catálogos (seed + persistencia) =====
+  const DEFAULT_CATALOGS = {
+    "General Pueyrredon": {
+      localidades: [
+        "Mar del Plata","Batán","Sierra de los Padres","Chapadmalal","Estación Camet","El Boquerón"
+      ],
+      dependencias: [
+        "Comisaría 1ra MdP","Comisaría 2da MdP","Comisaría 3ra MdP","Comisaría 4ta MdP",
+        "Comisaría 5ta MdP","Comisaría 6ta MdP","Subcomisaría Camet","Subcomisaría Acantilados",
+        "DDI Mar del Plata","Comisaría de la Mujer MdP","UPPL MdP","CPO MdP"
+      ]
+    },
+    "Balcarce": {
+      localidades: ["Balcarce","San Agustín","Los Pinos"],
+      dependencias: [
+        "Comisaría Balcarce","Comisaría de la Mujer Balcarce","DDI Balcarce","Destacamento San Agustín"
+      ]
+    },
+    "Mar Chiquita": {
+      localidades: ["Coronel Vidal","Santa Clara del Mar","Vivoratá","Mar de Cobo","La Caleta","Mar Chiquita"],
+      dependencias: [
+        "Comisaría Coronel Vidal","Comisaría Santa Clara del Mar","Comisaría de la Mujer Mar Chiquita","Destacamento Mar de Cobo"
+      ]
+    },
+    "General Alvarado": {
+      localidades: ["Miramar","Mechongué","Comandante N. Otamendi","Mar del Sud"],
+      dependencias: [
+        "Comisaría Miramar","Comisaría Otamendi","Comisaría de la Mujer Gral. Alvarado","Destacamento Mar del Sud"
+      ]
+    }
+  };
+
+  function getCatalogs(){
+    try{
+      const raw = localStorage.getItem(CATKEY);
+      if(!raw) return structuredClone(DEFAULT_CATALOGS);
+      const parsed = JSON.parse(raw);
+      // merge suave por si agregamos nuevos partidos en updates
+      const cat = structuredClone(DEFAULT_CATALOGS);
+      for(const k of Object.keys(parsed||{})){
+        cat[k] = parsed[k];
+      }
+      return cat;
+    } catch { return structuredClone(DEFAULT_CATALOGS); }
+  }
+  function setCatalogs(obj){ localStorage.setItem(CATKEY, JSON.stringify(obj)); }
+
+  // ===== Casos =====
   function getCases(){ try{ return JSON.parse(localStorage.getItem(CASEKEY)||"[]"); }catch{ return []; } }
   function setCases(arr){ localStorage.setItem(CASEKEY, JSON.stringify(arr)); }
   function freshId(){ return "c_"+Date.now()+"_"+Math.random().toString(36).slice(2,7); }
@@ -22,15 +72,43 @@
     const box=$("#casesList"); if(!box) return;
     const cases = getCases();
     if(!cases.length){ box.innerHTML="Sin hechos guardados."; return; }
-    box.innerHTML = `<table><thead><tr><th></th><th></th><th>Nombre</th><th>Fecha</th><th>PU</th></tr></thead><tbody>${
+    box.innerHTML = `<table><thead><tr><th></th><th></th><th>Nombre</th><th>Fecha</th><th>Tipo</th><th>Número</th><th>Partido</th><th>Dep.</th></tr></thead><tbody>${
       cases.map(c=>`<tr>
         <td><input type="checkbox" class="caseCheck" data-id="${c.id}"></td>
         <td><input type="radio" name="caseSel" data-id="${c.id}"></td>
-        <td>${c.name||''}</td><td>${c.generales?.fecha_hora||''}</td><td>${c.generales?.pu||''}</td>
+        <td>${c.name||''}</td>
+        <td>${c.generales?.fecha_hora||''}</td>
+        <td>${c.generales?.tipoExp||''}</td>
+        <td>${c.generales?.numExp||''}</td>
+        <td>${c.generales?.partido||''}</td>
+        <td>${c.generales?.dependencia||''}</td>
       </tr>`).join("")
     }</tbody></table>`;
   }
 
+  // ===== Desplegables dependientes =====
+  function loadLocalidadesAndDeps(){
+    const cat = getCatalogs();
+    const partido = $("#g_partido").value || "";
+    const locSel = $("#g_localidad");
+    const depSel = $("#g_dep");
+    locSel.innerHTML = "";
+    depSel.innerHTML = "";
+
+    if(!partido || !cat[partido]){
+      locSel.append(new Option("—", ""));
+      depSel.append(new Option("—", ""));
+      return;
+    }
+    const locs = (cat[partido].localidades||[]);
+    const deps = (cat[partido].dependencias||[]);
+    if(locs.length===0) locSel.append(new Option("—", ""));
+    else locs.forEach(l => locSel.append(new Option(l, l)));
+    if(deps.length===0) depSel.append(new Option("—", ""));
+    else deps.forEach(d => depSel.append(new Option(d, d)));
+  }
+
+  // ===== Etiquetas dinámicas =====
   const ROLE_KEYS = ["victima","imputado","denunciante","testigo","pp","aprehendido","detenido","menor","nn","damnificado institucional"];
   const OBJ_CATS  = ["secuestro","sustraccion","hallazgo","otro"];
 
@@ -78,6 +156,7 @@
     });
   }
 
+  // ===== Stores de formulario =====
   const CIV = { store:[], add(){
       const p = {
         nombre: $("#c_nombre").value, apellido: $("#c_apellido").value, edad: $("#c_edad").value,
@@ -154,18 +233,25 @@
     }
   };
 
+  // ===== Build data from form =====
   function buildDataFromForm(){
+    const tipo = $("#g_tipoExp").value || "PU";
+    const num  = ($("#g_numExp").value||"").trim();
+    const puFull = num ? `${tipo} ${num}` : "";
+
     return {
       generales: {
         fecha_hora: $("#g_fecha").value.trim(),
-        pu: $("#g_pu").value.trim(),
-        dependencia: $("#g_dep").value.trim(),
+        pu: puFull,                 // se mantiene 'pu' para compatibilidad con formatter
+        tipoExp: tipo,
+        numExp: num,
+        partido: $("#g_partido").value,
+        localidad: $("#g_localidad").value,
+        dependencia: $("#g_dep").value,
         caratula: $("#g_car").value.trim(),
         subtitulo: $("#g_sub").value.trim(),
         esclarecido: $("#g_ok").value==="si",
         ufi: $("#g_ufi").value.trim(),
-        partido: $("#g_partido").value.trim(),
-        localidad: $("#g_localidad").value.trim(),
         coordenadas: $("#g_coord").value.trim(),
         relevante: $("#g_relevante").checked,
         supervisado: $("#g_supervisado").checked
@@ -177,17 +263,24 @@
     };
   }
 
+  // ===== Título compuesto =====
   function renderTitlePreview(){
-    const t = [$("#g_fecha").value,$("#g_pu").value,$("#g_dep").value,$("#g_car").value].filter(Boolean).join(" – ");
+    const tipo = $("#g_tipoExp").value || "PU";
+    const num  = ($("#g_numExp").value||"").trim();
+    const puFmt = num ? `${tipo} ${num}` : "";
+    const parts = [
+      $("#g_fecha").value,
+      puFmt,
+      $("#g_dep").value,
+      $("#g_car").value
+    ].filter(Boolean);
+    const t = parts.join(" – ");
     const sub = $("#g_sub").value; const ok = ($("#g_ok").value==="si");
     $("#tituloCompuesto").innerHTML = `<strong>${t.toUpperCase()}</strong>`;
     $("#subCompuesto").innerHTML = `<span class="badge ${ok?'blue':'red'}"><strong>${sub}</strong></span>`;
   }
-  ["g_fecha","g_pu","g_dep","g_car","g_sub","g_ok","g_ufi","g_partido","g_localidad","g_coord","g_relevante","g_supervisado"].forEach(id=>{
-    const n=document.getElementById(id); if(n) n.addEventListener("input", renderTitlePreview);
-    if(n && n.type==="checkbox") n.addEventListener("change", renderTitlePreview);
-  });
 
+  // ===== Preview / acciones =====
   function preview(){
     const data = buildDataFromForm();
     const out = HRFMT.buildAll(data);
@@ -195,6 +288,16 @@
     return out;
   }
 
+  // ===== Eventos de inputs que actualizan título / combos dependientes =====
+  ["g_fecha","g_numExp","g_tipoExp","g_dep","g_car","g_sub","g_ok","g_ufi","g_coord","g_relevante","g_supervisado"].forEach(id=>{
+    const n=document.getElementById(id); if(n) n.addEventListener("input", renderTitlePreview);
+    if(n && n.type==="checkbox") n.addEventListener("change", renderTitlePreview);
+  });
+
+  $("#g_partido").addEventListener("change", ()=>{ loadLocalidadesAndDeps(); renderTitlePreview(); });
+  $("#g_localidad").addEventListener("change", renderTitlePreview);
+
+  // ===== Botones base =====
   bindClick("addCivil",  ()=> CIV.add());
   bindClick("addFuerza", ()=> FZA.add());
   bindClick("addObjeto", ()=> OBJ.add());
@@ -211,6 +314,7 @@
 
   bindClick("exportCSV1", ()=>{ HRFMT.downloadCSV([buildDataFromForm()]); });
 
+  // ===== CRUD de casos =====
   const selectedRadio = ()=> { const r = document.querySelector('input[name="caseSel"]:checked'); return r ? r.getAttribute("data-id") : null; };
   const selectedChecks = ()=> $$(".caseCheck:checked").map(x=>x.getAttribute("data-id"));
 
@@ -272,7 +376,7 @@
       children.push(new Paragraph({ children:[ new TextRun({ text: built.forDocx.titulo, bold:true }) ] }));
       children.push(new Paragraph({ children:[ new TextRun({ text: built.forDocx.subtitulo, bold:true, color: built.forDocx.color }) ] }));
       (built.forDocx.bodyHtml||"").split(/\n\n+/).forEach(p=>{
-        children.push(new Paragraph({ children: toRuns(p), alignment: JUST, spacing:{after:200} }));
+        children.push(new Paragraph({ children: toRuns(p), alignment: AlignmentType.JUSTIFIED, spacing:{after:200} }));
       });
       if(i !== selected.length-1) children.push(new Paragraph({ text:"" }));
     });
@@ -289,14 +393,20 @@
 
   function loadSnapshot(s){
     $("#g_fecha").value = s.generales?.fecha_hora||"";
-    $("#g_pu").value    = s.generales?.pu||"";
-    $("#g_dep").value   = s.generales?.dependencia||"";
+    // tipo + número
+    $("#g_tipoExp").value = s.generales?.tipoExp || "PU";
+    $("#g_numExp").value  = s.generales?.numExp || (s.generales?.pu||"").replace(/^.*?\s+/,'').trim();
+
+    // partido/loc/dep
+    $("#g_partido").value = s.generales?.partido||"";
+    loadLocalidadesAndDeps();
+    $("#g_localidad").value = s.generales?.localidad||"";
+    $("#g_dep").value = s.generales?.dependencia||"";
+
     $("#g_car").value   = s.generales?.caratula||"";
     $("#g_sub").value   = s.generales?.subtitulo||"";
     $("#g_ok").value    = s.generales?.esclarecido ? "si" : "no";
     $("#g_ufi").value   = s.generales?.ufi||"";
-    $("#g_partido").value = s.generales?.partido||"";
-    $("#g_localidad").value = s.generales?.localidad||"";
     $("#g_coord").value = s.generales?.coordenadas||"";
     $("#g_relevante").checked = !!s.generales?.relevante;
     $("#g_supervisado").checked = !!s.generales?.supervisado;
@@ -309,7 +419,7 @@
     renderTagHelper();
   }
 
-  // ===== RESPALDO / RESTAURACIÓN JSON =====
+  // ===== Backup / Restore / Merge JSON =====
   function exportBackupJSON() {
     const cases = getCases();
     const payload = { version: 1, exported_at: new Date().toISOString(), cases };
@@ -384,7 +494,6 @@
     }
   }
 
-  // Eventos backup/restore/merge
   bindClick("backupJSON", ()=> exportBackupJSON());
 
   bindClick("restoreJSON", ()=>{
@@ -417,8 +526,39 @@
     });
   }
 
-  // Init
+  // ===== Catálogos UI =====
+  function cat_loadIntoEditor(){
+    const cat = getCatalogs();
+    const partido = $("#cat_partidoSel").value;
+    const locs = (cat[partido]?.localidades||[]).join("\n");
+    const deps = (cat[partido]?.dependencias||[]).join("\n");
+    $("#cat_localidades").value = locs;
+    $("#cat_dependencias").value = deps;
+  }
+  bindClick("cat_guardar", ()=>{
+    const partido = $("#cat_partidoSel").value;
+    const cat = getCatalogs();
+    cat[partido] = {
+      localidades: $("#cat_localidades").value.split("\n").map(s=>s.trim()).filter(Boolean),
+      dependencias: $("#cat_dependencias").value.split("\n").map(s=>s.trim()).filter(Boolean)
+    };
+    setCatalogs(cat);
+    if($("#g_partido").value===partido){ loadLocalidadesAndDeps(); renderTitlePreview(); }
+    alert("Catálogos guardados.");
+  });
+  bindClick("cat_reset", ()=>{
+    setCatalogs(DEFAULT_CATALOGS);
+    cat_loadIntoEditor();
+    if($("#g_partido").value){ loadLocalidadesAndDeps(); renderTitlePreview(); }
+    alert("Restaurados valores de ejemplo.");
+  });
+  $("#cat_partidoSel").addEventListener("change", cat_loadIntoEditor);
+
+  // ===== Init =====
   renderCases();
+  loadLocalidadesAndDeps();
   renderTitlePreview();
   renderTagHelper();
+  // inicializar catálogo editor
+  cat_loadIntoEditor();
 })();
