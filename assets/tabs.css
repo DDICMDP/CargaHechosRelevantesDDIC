@@ -1,0 +1,9 @@
+/* Tabs */ 
+.tabs{margin-top:6px}
+.tabs-nav{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:8px;flex-wrap:wrap}
+.tab{appearance:none;border:1px solid var(--line);border-bottom:none;background:#f8fafc;
+  padding:8px 12px;border-top-left-radius:10px;border-top-right-radius:10px;cursor:pointer;
+  font-weight:700;color:#334155;}
+.tab.is-active{background:#fff;border-color:var(--line);color:#111827}
+.tab-panel{display:none}
+.tab-panel.is-active{display:block}
