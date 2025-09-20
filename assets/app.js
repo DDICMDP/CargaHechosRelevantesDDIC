@@ -309,6 +309,115 @@
     renderTagHelper();
   }
 
+  // ===== RESPALDO / RESTAURACIÓN JSON =====
+  function exportBackupJSON() {
+    const cases = getCases();
+    const payload = { version: 1, exported_at: new Date().toISOString(), cases };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `hechos_backup_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+  }
+
+  async function importBackupJSON(file) {
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const incoming = Array.isArray(data?.cases) ? data.cases : (Array.isArray(data) ? data : null);
+      if (!incoming) { alert("No encontré 'cases' en el JSON."); return; }
+
+      const replaceAll = confirm("¿Querés REEMPLAZAR todo lo guardado por el contenido del archivo?\nAceptar = Reemplazar todo\nCancelar = Fusionar (agrega sin duplicar)");
+      if (replaceAll) {
+        setCases(incoming);
+        renderCases();
+        alert(`Restauración completa: ${incoming.length} hechos.`);
+        return;
+      }
+
+      const current = getCases();
+      const existingIds = new Set(current.map(c => c.id));
+      let added = 0, skipped = 0;
+
+      incoming.forEach(item => {
+        if (!item || typeof item !== "object") { skipped++; return; }
+        if (!item.id) item.id = freshId();
+        if (!item.name) item.name = "Hecho importado";
+        if (existingIds.has(item.id)) { skipped++; }
+        else { current.push(item); existingIds.add(item.id); added++; }
+      });
+
+      setCases(current);
+      renderCases();
+      alert(`Fusión completa: agregados ${added}, saltados ${skipped}.`);
+    } catch (e) {
+      console.error(e);
+      alert("No se pudo leer el archivo JSON.");
+    }
+  }
+
+  async function mergeBackupJSON(file) {
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const incoming = Array.isArray(data?.cases) ? data.cases : (Array.isArray(data) ? data : null);
+      if (!incoming) { alert("No encontré 'cases' en el JSON."); return; }
+
+      const current = getCases();
+      const existingIds = new Set(current.map(c => c.id));
+      let added = 0, skipped = 0;
+
+      incoming.forEach(item => {
+        if (!item || typeof item !== "object") { skipped++; return; }
+        if (!item.id) item.id = freshId();
+        if (!item.name) item.name = "Hecho importado";
+        if (existingIds.has(item.id)) { skipped++; }
+        else { current.push(item); existingIds.add(item.id); added++; }
+      });
+
+      setCases(current);
+      renderCases();
+      alert(`Fusionado: agregados ${added}, saltados ${skipped}.`);
+    } catch (e) {
+      console.error(e);
+      alert("No se pudo leer el archivo JSON.");
+    }
+  }
+
+  // Eventos backup/restore/merge
+  bindClick("backupJSON", ()=> exportBackupJSON());
+
+  bindClick("restoreJSON", ()=>{
+    const input = document.getElementById("restoreFile");
+    if (!input) return;
+    input.value = "";
+    input.click();
+  });
+  const restoreInput = document.getElementById("restoreFile");
+  if (restoreInput) {
+    restoreInput.addEventListener("change", ()=>{
+      if (restoreInput.files && restoreInput.files[0]) {
+        importBackupJSON(restoreInput.files[0]);
+      }
+    });
+  }
+
+  bindClick("mergeJSON", ()=>{
+    const input = document.getElementById("mergeFile");
+    if (!input) return;
+    input.value = "";
+    input.click();
+  });
+  const mergeInput = document.getElementById("mergeFile");
+  if (mergeInput) {
+    mergeInput.addEventListener("change", ()=>{
+      if (mergeInput.files && mergeInput.files[0]) {
+        mergeBackupJSON(mergeInput.files[0]);
+      }
+    });
+  }
+
+  // Init
   renderCases();
   renderTitlePreview();
   renderTagHelper();
