@@ -4,14 +4,14 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Hechos Relevantes</title>
-  <link rel="stylesheet" href="assets/styles.css?v=6"/>
-  <link rel="stylesheet" href="assets/tabs.css?v=6"/>
+  <link rel="stylesheet" href="assets/styles.css?v=7"/>
+  <link rel="stylesheet" href="assets/tabs.css?v=7"/>
 </head>
 <body>
   <header class="hero">
     <div class="hero-inner">
       <h1>Hechos Relevantes</h1>
-      <p class="tagline">WhatsApp + Word (Arial 12) + CSV • Múltiples casos</p>
+      <p class="tagline">WhatsApp + Word (Arial 12) + CSV • Múltiples casos • Catálogos editables</p>
     </div>
   </header>
 
@@ -42,7 +42,7 @@
         <button class="btn success" id="exportCSV">Exportar CSV (seleccionados)</button>
         <button class="btn success" id="downloadWordMulti">Descargar Word (seleccionados)</button>
 
-        <!-- NUEVO: respaldo / restauración -->
+        <!-- Respaldo / restauración -->
         <button class="btn ghost" id="backupJSON">Respaldar (JSON)</button>
         <button class="btn ghost" id="restoreJSON">Restaurar (JSON)</button>
         <button class="btn ghost" id="mergeJSON">Fusionar (JSON) directo</button>
@@ -61,17 +61,43 @@
           <button class="tab" data-tab="t-civiles">Civiles</button>
           <button class="tab" data-tab="t-fuerzas">Personal Fuerzas</button>
           <button class="tab" data-tab="t-objetos">Objetos</button>
+          <button class="tab" data-tab="t-catalogos">Catálogos</button>
         </div>
 
         <!-- Generales -->
         <div class="tab-panel is-active" id="t-generales">
           <div class="grid">
             <label>Fecha – Hora <input id="g_fecha" placeholder="20-09-2025 – 17:15 hs"></label>
-            <label>PU / IPP / NUC <input id="g_pu" placeholder="PU 270840 – IPP 12345"></label>
-            <label>Dependencia <input id="g_dep" placeholder="Sub. Cría. Camet. Mar del Plata"></label>
-            <label>Carátula <input id="g_car" placeholder="Robo agravado en poblado en banda y por el uso de arma de fuego"></label>
+
+            <!-- Tipo + número => luego en el título se arma 'PU 123' o 'IPP 123' -->
+            <label>Tipo expediente
+              <select id="g_tipoExp">
+                <option value="PU" selected>PU</option>
+                <option value="IPP">IPP</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </label>
+            <label>Número <input id="g_numExp" placeholder="270840"></label>
+
+            <label>Partido
+              <select id="g_partido">
+                <option value="">— Elegir —</option>
+                <option>General Pueyrredon</option>
+                <option>Balcarce</option>
+                <option>Mar Chiquita</option>
+                <option>General Alvarado</option>
+              </select>
+            </label>
+            <label>Localidad
+              <select id="g_localidad"></select>
+            </label>
           </div>
+
           <div class="grid">
+            <label>Dependencia
+              <select id="g_dep"></select>
+            </label>
+            <label>Carátula <input id="g_car" placeholder="Robo agravado en poblado en banda y por el uso de arma de fuego"></label>
             <label>Subtítulo <input id="g_sub" placeholder="Entradera"></label>
             <label>Estado
               <select id="g_ok">
@@ -79,11 +105,10 @@
                 <option value="si">Esclarecido (Azul)</option>
               </select>
             </label>
-            <label>UFI / Intervención <input id="g_ufi" placeholder="UFI 10 Dr. Pérez"></label>
-            <label>Partido <input id="g_partido" placeholder="General Pueyrredón"></label>
           </div>
+
           <div class="grid">
-            <label>Localidad <input id="g_localidad" placeholder="Mar del Plata"></label>
+            <label>UFI / Intervención <input id="g_ufi" placeholder="UFI 10 Dr. Pérez"></label>
             <label>Coordenadas <input id="g_coord" placeholder="-38.000, -57.555"></label>
             <label class="row" style="align-items:center;gap:10px">
               <input type="checkbox" id="g_relevante" /> <span>Relevante</span>
@@ -92,6 +117,7 @@
               <input type="checkbox" id="g_supervisado" /> <span>Supervisado</span>
             </label>
           </div>
+
           <div class="title-preview">
             <div id="tituloCompuesto" class="titleline">—</div>
             <div id="subCompuesto" class="subtitleline">—</div>
@@ -176,6 +202,34 @@
           </div>
           <div id="objetosList" class="table"></div>
         </div>
+
+        <!-- Catálogos -->
+        <div class="tab-panel" id="t-catalogos">
+          <p class="small">Editá los catálogos por Partido. Un ítem por línea. Guardá para aplicar en los desplegables.</p>
+          <div class="grid">
+            <label>Partido
+              <select id="cat_partidoSel">
+                <option>General Pueyrredon</option>
+                <option>Balcarce</option>
+                <option>Mar Chiquita</option>
+                <option>General Alvarado</option>
+              </select>
+            </label>
+          </div>
+          <div class="grid">
+            <label>Localidades (una por línea)
+              <textarea id="cat_localidades" rows="8"></textarea>
+            </label>
+            <label>Dependencias (una por línea)
+              <textarea id="cat_dependencias" rows="8"></textarea>
+            </label>
+          </div>
+          <div class="row">
+            <button class="btn" id="cat_guardar">Guardar catálogos del partido</button>
+            <button class="btn ghost" id="cat_reset">Restaurar valores de ejemplo</button>
+          </div>
+        </div>
+
       </div>
     </section>
 
@@ -207,9 +261,10 @@
   <footer class="foot"><span>Ctrl + Enter = Generar</span></footer>
 
   <script defer src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js"></script>
-  <script defer src="assets/formatter.js?v=6"></script>
-  <script defer src="assets/tabs.js?v=6"></script>
-  <script defer src="assets/app.js?v=6"></script>
+  <script defer src="assets/formatter.js?v=7"></script>
+  <script defer src="assets/tabs.js?v=7"></script>
+  <script defer src="assets/app.js?v=7"></script>
 </body>
 </html>
+
 
