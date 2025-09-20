@@ -53,11 +53,8 @@
       const raw = localStorage.getItem(CATKEY);
       if(!raw) return structuredClone(DEFAULT_CATALOGS);
       const parsed = JSON.parse(raw);
-      // merge suave por si agregamos nuevos partidos en updates
       const cat = structuredClone(DEFAULT_CATALOGS);
-      for(const k of Object.keys(parsed||{})){
-        cat[k] = parsed[k];
-      }
+      for(const k of Object.keys(parsed||{})){ cat[k] = parsed[k]; }
       return cat;
     } catch { return structuredClone(DEFAULT_CATALOGS); }
   }
@@ -87,29 +84,39 @@
   }
 
   // ===== Desplegables dependientes =====
+  function fillSelectOptions(select, list, {includeManual=false}={}){
+    select.innerHTML = "";
+    select.append(new Option("— Elegir —", ""));
+    (list||[]).forEach(v=> select.append(new Option(v, v)));
+    if(includeManual) select.append(new Option("Escribir manualmente…", "__manual__"));
+  }
+
   function loadLocalidadesAndDeps(){
     const cat = getCatalogs();
     const partido = $("#g_partido").value || "";
     const locSel = $("#g_localidad");
     const depSel = $("#g_dep");
-    locSel.innerHTML = "";
-    depSel.innerHTML = "";
+    const depManualWrap = $("#g_dep_manual_wrap");
 
     if(!partido || !cat[partido]){
-      locSel.append(new Option("—", ""));
-      depSel.append(new Option("—", ""));
+      fillSelectOptions(locSel, [], {});
+      fillSelectOptions(depSel, [], {includeManual:true});
+      depManualWrap.style.display="none";
       return;
     }
-    const locs = (cat[partido].localidades||[]);
-    const deps = (cat[partido].dependencias||[]);
-    if(locs.length===0) locSel.append(new Option("—", ""));
-    else locs.forEach(l => locSel.append(new Option(l, l)));
-    if(deps.length===0) depSel.append(new Option("—", ""));
-    else deps.forEach(d => depSel.append(new Option(d, d)));
+    fillSelectOptions(locSel, (cat[partido].localidades||[]), {});
+    fillSelectOptions(depSel, (cat[partido].dependencias||[]), {includeManual:true});
+    depManualWrap.style.display = (depSel.value==="__manual__") ? "block" : "none";
   }
 
+  $("#g_dep")?.addEventListener("change", ()=>{
+    const depManualWrap = $("#g_dep_manual_wrap");
+    depManualWrap.style.display = ($("#g_dep").value==="__manual__") ? "block" : "none";
+    renderTitlePreview();
+  });
+
   // ===== Etiquetas dinámicas =====
-  const ROLE_KEYS = ["victima","imputado","denunciante","testigo","pp","aprehendido","detenido","menor","nn","damnificado institucional"];
+  const ROLE_KEYS = ["victima","imputado","sindicado","denunciante","testigo","pp","aprehendido","detenido","menor","nn","damnificado institucional"];
   const OBJ_CATS  = ["secuestro","sustraccion","hallazgo","otro"];
 
   function insertAtCursor(textarea, text){
@@ -156,15 +163,53 @@
     });
   }
 
-  // ===== Stores de formulario =====
-  const CIV = { store:[], add(){
+  // ===== Civiles (con editar) =====
+  const CIV = {
+    store:[],
+    editingIndex: null,
+    addOrUpdate(){
       const p = {
         nombre: $("#c_nombre").value, apellido: $("#c_apellido").value, edad: $("#c_edad").value,
         genero: $("#c_genero").value, dni: $("#c_dni").value, pais: $("#c_pais").value,
         loc_domicilio: $("#c_loc").value, calle_domicilio: $("#c_calle").value,
         vinculo: $("#c_vinculo").value, obito: $("#c_obito").value==="true"
       };
-      this.store.push(p); this.render();
+      if (this.editingIndex === null) {
+        this.store.push(p);
+      } else {
+        this.store[this.editingIndex] = p;
+        this.editingIndex = null;
+        const btn = document.getElementById("addCivil");
+        if (btn) btn.textContent = "Agregar involucrado";
+        const cancel = document.getElementById("cancelEditCivil");
+        if (cancel) cancel.remove();
+      }
+      this.clearForm();
+      this.render();
+    },
+    clearForm(){
+      $("#c_nombre").value=""; $("#c_apellido").value=""; $("#c_edad").value="";
+      $("#c_genero").value=""; $("#c_dni").value=""; $("#c_pais").value="";
+      $("#c_loc").value=""; $("#c_calle").value=""; $("#c_vinculo").value="Victima"; $("#c_obito").value="false";
+    },
+    startEdit(i){
+      const p = this.store[i]; if(!p) return;
+      $("#c_nombre").value=p.nombre||""; $("#c_apellido").value=p.apellido||""; $("#c_edad").value=p.edad||"";
+      $("#c_genero").value=p.genero||""; $("#c_dni").value=p.dni||""; $("#c_pais").value=p.pais||"";
+      $("#c_loc").value=p.loc_domicilio||""; $("#c_calle").value=p.calle_domicilio||"";
+      $("#c_vinculo").value=p.vinculo||"Victima"; $("#c_obito").value=p.obito?"true":"false";
+      this.editingIndex = i;
+      const btn = document.getElementById("addCivil");
+      if (btn) btn.textContent = "Guardar cambios";
+      if (!document.getElementById("cancelEditCivil")) {
+        const cancel = document.createElement("button");
+        cancel.id = "cancelEditCivil";
+        cancel.className = "btn ghost";
+        cancel.style.marginLeft = "6px";
+        cancel.textContent = "Cancelar";
+        btn.parentElement.appendChild(cancel);
+        cancel.onclick = ()=>{ this.editingIndex=null; this.clearForm(); if(btn) btn.textContent="Agregar involucrado"; cancel.remove(); };
+      }
     },
     render(){
       const box=$("#civilesList");
@@ -177,22 +222,70 @@
           <td>${TitleCase(p.nombre||"")}</td><td>${TitleCase(p.apellido||"")}</td>
           <td>${p.edad||""}</td><td>${p.dni||""}</td>
           <td>${[TitleCase(p.calle_domicilio||""), TitleCase(p.loc_domicilio||"")].filter(Boolean).join(", ")}</td>
-          <td><button class="btn ghost" data-delc="${i}">Quitar</button></td>
+          <td>
+            <button class="btn ghost" data-editc="${i}">Editar</button>
+            <button class="btn ghost" data-delc="${i}">Quitar</button>
+          </td>
         </tr>`).join("")
       }</tbody></table></div>`;
-      $$("#civilesList [data-delc]").forEach(b=> b.onclick = ()=>{ this.store.splice(parseInt(b.dataset.delc,10),1); this.render(); });
+      $$("#civilesList [data-delc]").forEach(b=> b.onclick = ()=>{
+        this.store.splice(parseInt(b.dataset.delc,10),1); this.render();
+      });
+      $$("#civilesList [data-editc]").forEach(b=> b.onclick = ()=>{
+        this.startEdit(parseInt(b.dataset.editc,10));
+      });
       renderTagHelper();
     }
   };
 
-  const FZA = { store:[], add(){
+  // ===== Fuerzas (con editar) =====
+  const FZA = {
+    store:[],
+    editingIndex: null,
+    addOrUpdate(){
       const p = {
         nombre: $("#f_nombre").value, apellido: $("#f_apellido").value, edad: $("#f_edad").value,
         fuerza: $("#f_fuerza").value, jerarquia: $("#f_jerarquia").value, legajo: $("#f_legajo").value,
         destino: $("#f_destino").value, loc_domicilio: $("#f_loc").value, calle_domicilio: $("#f_calle").value,
         vinculo: $("#f_vinculo").value, obito: $("#f_obito").value==="true"
       };
-      this.store.push(p); this.render();
+      if (this.editingIndex === null) {
+        this.store.push(p);
+      } else {
+        this.store[this.editingIndex] = p;
+        this.editingIndex = null;
+        const btn = document.getElementById("addFuerza");
+        if (btn) btn.textContent = "Agregar personal";
+        const cancel = document.getElementById("cancelEditFza");
+        if (cancel) cancel.remove();
+      }
+      this.clearForm();
+      this.render();
+    },
+    clearForm(){
+      $("#f_nombre").value=""; $("#f_apellido").value=""; $("#f_edad").value="";
+      $("#f_fuerza").value=""; $("#f_jerarquia").value=""; $("#f_legajo").value="";
+      $("#f_destino").value=""; $("#f_loc").value=""; $("#f_calle").value="";
+      $("#f_vinculo").value="Imputado"; $("#f_obito").value="false";
+    },
+    startEdit(i){
+      const p = this.store[i]; if(!p) return;
+      $("#f_nombre").value=p.nombre||""; $("#f_apellido").value=p.apellido||""; $("#f_edad").value=p.edad||"";
+      $("#f_fuerza").value=p.fuerza||""; $("#f_jerarquia").value=p.jerarquia||""; $("#f_legajo").value=p.legajo||"";
+      $("#f_destino").value=p.destino||""; $("#f_loc").value=p.loc_domicilio||""; $("#f_calle").value=p.calle_domicilio||"";
+      $("#f_vinculo").value=p.vinculo||"Imputado"; $("#f_obito").value=p.obito?"true":"false";
+      this.editingIndex = i;
+      const btn = document.getElementById("addFuerza");
+      if (btn) btn.textContent = "Guardar cambios";
+      if (!document.getElementById("cancelEditFza")) {
+        const cancel = document.createElement("button");
+        cancel.id = "cancelEditFza";
+        cancel.className = "btn ghost";
+        cancel.style.marginLeft = "6px";
+        cancel.textContent = "Cancelar";
+        btn.parentElement.appendChild(cancel);
+        cancel.onclick = ()=>{ this.editingIndex=null; this.clearForm(); if(btn) btn.textContent="Agregar personal"; cancel.remove(); };
+      }
     },
     render(){
       const box=$("#fuerzasList");
@@ -204,18 +297,61 @@
           <td>${i}</td><td>${p.vinculo}</td>
           <td>${TitleCase(p.nombre||"")}</td><td>${TitleCase(p.apellido||"")}</td>
           <td>${p.edad||""}</td><td>${p.fuerza||""}</td><td>${p.jerarquia||""}</td><td>${p.destino||""}</td>
-          <td><button class="btn ghost" data-delf="${i}">Quitar</button></td>
+          <td>
+            <button class="btn ghost" data-editf="${i}">Editar</button>
+            <button class="btn ghost" data-delf="${i}">Quitar</button>
+          </td>
         </tr>`).join("")
       }</tbody></table></div>`;
-      $$("#fuerzasList [data-delf]").forEach(b=> b.onclick = ()=>{ this.store.splice(parseInt(b.dataset.delf,10),1); this.render(); });
+      $$("#fuerzasList [data-delf]").forEach(b=> b.onclick = ()=>{
+        this.store.splice(parseInt(b.dataset.delf,10),1); this.render();
+      });
+      $$("#fuerzasList [data-editf]").forEach(b=> b.onclick = ()=>{
+        this.startEdit(parseInt(b.dataset.editf,10));
+      });
       renderTagHelper();
     }
   };
 
-  const OBJ = { store:[], add(){
+  // ===== Objetos (con editar) =====
+  const OBJ = {
+    store:[],
+    editingIndex: null,
+    addOrUpdate(){
       const o = { descripcion: $("#o_desc").value, vinculo: $("#o_vinc").value };
       if(!o.descripcion.trim()) return;
-      this.store.push(o); this.render();
+      if (this.editingIndex === null) {
+        this.store.push(o);
+      } else {
+        this.store[this.editingIndex] = o;
+        this.editingIndex = null;
+        const btn = document.getElementById("addObjeto");
+        if (btn) btn.textContent = "Agregar objeto";
+        const cancel = document.getElementById("cancelEditObj");
+        if (cancel) cancel.remove();
+      }
+      this.clearForm();
+      this.render();
+    },
+    clearForm(){
+      $("#o_desc").value=""; $("#o_vinc").value="Secuestro";
+    },
+    startEdit(i){
+      const o = this.store[i]; if(!o) return;
+      $("#o_desc").value = o.descripcion||"";
+      $("#o_vinc").value = o.vinculo||"Secuestro";
+      this.editingIndex = i;
+      const btn = document.getElementById("addObjeto");
+      if (btn) btn.textContent = "Guardar cambios";
+      if (!document.getElementById("cancelEditObj")) {
+        const cancel = document.createElement("button");
+        cancel.id = "cancelEditObj";
+        cancel.className = "btn ghost";
+        cancel.style.marginLeft = "6px";
+        cancel.textContent = "Cancelar";
+        btn.parentElement.appendChild(cancel);
+        cancel.onclick = ()=>{ this.editingIndex=null; this.clearForm(); if(btn) btn.textContent="Agregar objeto"; cancel.remove(); };
+      }
     },
     render(){
       const box=$("#objetosList");
@@ -225,15 +361,29 @@
       </tr></thead><tbody>${
         this.store.map((o,i)=>`<tr>
           <td>${i}</td><td>${o.descripcion}</td><td>${o.vinculo}</td>
-          <td><button class="btn ghost" data-delo="${i}">Quitar</button></td>
+          <td>
+            <button class="btn ghost" data-edito="${i}">Editar</button>
+            <button class="btn ghost" data-delo="${i}">Quitar</button>
+          </td>
         </tr>`).join("")
       }</tbody></table></div>`;
-      $$("#objetosList [data-delo]").forEach(b=> b.onclick = ()=>{ this.store.splice(parseInt(b.dataset.delo,10),1); this.render(); });
+      $$("#objetosList [data-delo]").forEach(b=> b.onclick = ()=>{
+        this.store.splice(parseInt(b.dataset.delo,10),1); this.render();
+      });
+      $$("#objetosList [data-edito]").forEach(b=> b.onclick = ()=>{
+        this.startEdit(parseInt(b.dataset.edito,10));
+      });
       renderTagHelper();
     }
   };
 
   // ===== Build data from form =====
+  function resolvedDependencia(){
+    const val = $("#g_dep").value;
+    if(val==="__manual__") return $("#g_dep_manual").value.trim();
+    return val;
+  }
+
   function buildDataFromForm(){
     const tipo = $("#g_tipoExp").value || "PU";
     const num  = ($("#g_numExp").value||"").trim();
@@ -242,12 +392,12 @@
     return {
       generales: {
         fecha_hora: $("#g_fecha").value.trim(),
-        pu: puFull,                 // se mantiene 'pu' para compatibilidad con formatter
+        pu: puFull,
         tipoExp: tipo,
         numExp: num,
         partido: $("#g_partido").value,
         localidad: $("#g_localidad").value,
-        dependencia: $("#g_dep").value,
+        dependencia: resolvedDependencia(),
         caratula: $("#g_car").value.trim(),
         subtitulo: $("#g_sub").value.trim(),
         esclarecido: $("#g_ok").value==="si",
@@ -263,18 +413,16 @@
     };
   }
 
-  // ===== Título compuesto =====
+  // ===== Título compuesto (usa dependencia resuelta) =====
   function renderTitlePreview(){
     const tipo = $("#g_tipoExp").value || "PU";
     const num  = ($("#g_numExp").value||"").trim();
     const puFmt = num ? `${tipo} ${num}` : "";
-    const parts = [
-      $("#g_fecha").value,
-      puFmt,
-      $("#g_dep").value,
-      $("#g_car").value
-    ].filter(Boolean);
+    const dep  = resolvedDependencia();
+
+    const parts = [ $("#g_fecha").value, puFmt, dep, $("#g_car").value ].filter(Boolean);
     const t = parts.join(" – ");
+
     const sub = $("#g_sub").value; const ok = ($("#g_ok").value==="si");
     $("#tituloCompuesto").innerHTML = `<strong>${t.toUpperCase()}</strong>`;
     $("#subCompuesto").innerHTML = `<span class="badge ${ok?'blue':'red'}"><strong>${sub}</strong></span>`;
@@ -289,18 +437,19 @@
   }
 
   // ===== Eventos de inputs que actualizan título / combos dependientes =====
-  ["g_fecha","g_numExp","g_tipoExp","g_dep","g_car","g_sub","g_ok","g_ufi","g_coord","g_relevante","g_supervisado"].forEach(id=>{
+  ["g_fecha","g_numExp","g_tipoExp","g_car","g_sub","g_ok","g_ufi","g_coord","g_relevante","g_supervisado","g_dep_manual"].forEach(id=>{
     const n=document.getElementById(id); if(n) n.addEventListener("input", renderTitlePreview);
     if(n && n.type==="checkbox") n.addEventListener("change", renderTitlePreview);
   });
 
   $("#g_partido").addEventListener("change", ()=>{ loadLocalidadesAndDeps(); renderTitlePreview(); });
   $("#g_localidad").addEventListener("change", renderTitlePreview);
+  $("#g_dep").addEventListener("change", renderTitlePreview);
 
   // ===== Botones base =====
-  bindClick("addCivil",  ()=> CIV.add());
-  bindClick("addFuerza", ()=> FZA.add());
-  bindClick("addObjeto", ()=> OBJ.add());
+  bindClick("addCivil",  ()=> CIV.addOrUpdate());
+  bindClick("addFuerza", ()=> FZA.addOrUpdate());
+  bindClick("addObjeto", ()=> OBJ.addOrUpdate());
 
   bindClick("generar",   ()=>{ preview(); });
   document.addEventListener("keydown",(e)=>{ if(e.ctrlKey && e.key==="Enter"){ e.preventDefault(); preview(); } });
@@ -313,6 +462,40 @@
   });
 
   bindClick("exportCSV1", ()=>{ HRFMT.downloadCSV([buildDataFromForm()]); });
+
+  // ===== Borrar todo (limpiar formulario actual) =====
+  bindClick("clearAll", ()=>{
+    if(!confirm("¿Borrar todos los campos del formulario actual? Esto no borra los 'Hechos guardados'.")) return;
+
+    // Generales
+    $("#g_fecha").value="";
+    $("#g_tipoExp").value="PU";
+    $("#g_numExp").value="";
+    $("#g_partido").value="";
+    loadLocalidadesAndDeps();
+    $("#g_localidad").value="";
+    $("#g_dep").value="";
+    $("#g_dep_manual").value="";
+    $("#g_dep_manual_wrap").style.display="none";
+    $("#g_car").value="";
+    $("#g_sub").value="";
+    $("#g_ok").value="no";
+    $("#g_ufi").value="";
+    $("#g_coord").value="";
+    $("#g_relevante").checked=false;
+    $("#g_supervisado").checked=false;
+
+    // Civiles/Fuerzas/Objetos
+    CIV.store=[]; FZA.store=[]; OBJ.store=[];
+    CIV.clearForm(); FZA.clearForm(); OBJ.clearForm();
+    CIV.render(); FZA.render(); OBJ.render();
+
+    // Cuerpo
+    $("#cuerpo").value="";
+
+    renderTitlePreview();
+    renderTagHelper();
+  });
 
   // ===== CRUD de casos =====
   const selectedRadio = ()=> { const r = document.querySelector('input[name="caseSel"]:checked'); return r ? r.getAttribute("data-id") : null; };
@@ -393,15 +576,26 @@
 
   function loadSnapshot(s){
     $("#g_fecha").value = s.generales?.fecha_hora||"";
-    // tipo + número
     $("#g_tipoExp").value = s.generales?.tipoExp || "PU";
     $("#g_numExp").value  = s.generales?.numExp || (s.generales?.pu||"").replace(/^.*?\s+/,'').trim();
 
-    // partido/loc/dep
     $("#g_partido").value = s.generales?.partido||"";
     loadLocalidadesAndDeps();
     $("#g_localidad").value = s.generales?.localidad||"";
-    $("#g_dep").value = s.generales?.dependencia||"";
+
+    // Dependencia: si no está en lista, seteo "__manual__" y pongo el input
+    const cat = getCatalogs();
+    const partido = $("#g_partido").value;
+    const deps = (cat[partido]?.dependencias||[]);
+    if (s.generales?.dependencia && !deps.includes(s.generales.dependencia)) {
+      $("#g_dep").value="__manual__";
+      $("#g_dep_manual").value = s.generales.dependencia;
+      $("#g_dep_manual_wrap").style.display="block";
+    } else {
+      $("#g_dep").value = s.generales?.dependencia||"";
+      $("#g_dep_manual").value="";
+      $("#g_dep_manual_wrap").style.display = ($("#g_dep").value==="__manual__") ? "block" : "none";
+    }
 
     $("#g_car").value   = s.generales?.caratula||"";
     $("#g_sub").value   = s.generales?.subtitulo||"";
@@ -559,6 +753,5 @@
   loadLocalidadesAndDeps();
   renderTitlePreview();
   renderTagHelper();
-  // inicializar catálogo editor
   cat_loadIntoEditor();
 })();
