@@ -47,4 +47,4 @@ strong{font-weight:900} em{font-style:italic} u{text-decoration:underline}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .chips .chip{border:1px solid var(--line);background:#fff;padding:6px 10px;border-radius:999px;font-size:12px;cursor:pointer;color:#111827;}
 .chips .chip:hover{background:#f1f5f9}
-.chips .muted{color:#muted;font-size:12px}
+.chips .muted{color:var(--muted);font-size:12px}
