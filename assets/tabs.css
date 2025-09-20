@@ -1,4 +1,4 @@
-/* Tabs */ 
+/* Tabs */
 .tabs{margin-top:6px}
 .tabs-nav{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:8px;flex-wrap:wrap}
 .tab{appearance:none;border:1px solid var(--line);border-bottom:none;background:#f8fafc;
