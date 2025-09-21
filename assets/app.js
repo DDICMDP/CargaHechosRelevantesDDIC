@@ -209,6 +209,11 @@
     });
   }
 
+  // ===== Flag para WhatsApp (sin saltos) =====
+  const setWaMerge = () => {
+    window.WA_MERGE_SOFTBREAKS = !!$("wa_merge")?.checked;
+  };
+
   // ===== Build data / preview / título =====
   function resolvedDep(){ return val("g_dep")==="__manual__" ? val("g_dep_manual").trim() : val("g_dep"); }
   function buildData(){
@@ -226,8 +231,18 @@
       cuerpo: val("cuerpo")
     };
   }
-  function preview(){ const out=HRFMT.buildAll(buildData()); const p=$("previewHtml"); if(p) p.textContent=out.waLong; return out; }
-  function renderTitlePreview(){ const out=HRFMT.buildAll(buildData()); $("tituloCompuesto").textContent=out.forDocx.titulo; $("subCompuesto").textContent=out.forDocx.subtitulo||""; }
+  function preview(){
+    setWaMerge(); // asegura el modo antes de construir
+    const out=HRFMT.buildAll(buildData());
+    const p=$("previewHtml");
+    if(p) p.textContent=out.waLong;
+    return out;
+  }
+  function renderTitlePreview(){
+    const out=HRFMT.buildAll(buildData());
+    $("tituloCompuesto").textContent=out.forDocx.titulo;
+    $("subCompuesto").textContent=out.forDocx.subtitulo||"";
+  }
 
   // ===== Casos (localStorage) =====
   const getCases=()=>{ try{ return JSON.parse(localStorage.getItem(CASEKEY)||"[]"); }catch{ return []; } };
@@ -295,6 +310,7 @@
     bind("generar", ()=> preview());
 
     bind("copiarWA", ()=>{
+      setWaMerge(); // importante para 1 o varios
       const ids = selectedChecks();
       if(!ids.length){
         const out = preview();
