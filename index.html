@@ -1,299 +1,223 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
   <title>Hechos Relevantes</title>
-  <link rel="stylesheet" href="assets/styles.css?v=13"/>
-  <link rel="stylesheet" href="assets/tabs.css?v=13"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Librería docx para exportar a Word -->
+  <script defer src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js"></script>
+
+  <!-- Lógica principal -->
+  <script defer src="assets/app.js"></script>
+
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background:#f5f6f8; }
+    header { background:#1a237e; color:white; padding:15px; text-align:center; }
+    .container { max-width:1200px; margin:auto; padding:20px; }
+    h1,h2 { margin:15px 0; }
+    section { background:#fff; margin-bottom:20px; padding:15px; border-radius:6px; box-shadow:0 1px 4px rgba(0,0,0,0.1); }
+    label { display:block; margin:8px 0 5px; font-weight:bold; }
+    input, select, textarea { width:100%; padding:8px; margin-top:3px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box; }
+    textarea { resize:vertical; }
+    button { margin:5px 5px 5px 0; padding:8px 14px; border:none; border-radius:4px; cursor:pointer; background:#1976d2; color:white; font-weight:bold; }
+    button:hover { background:#125a9c; }
+    button.ghost { background:#eee; color:#333; }
+    .badge { padding:3px 6px; border-radius:4px; font-size:13px; }
+    .badge.blue { background:#2196f3; color:white; }
+    .badge.red { background:#f44336; color:white; }
+    table { width:100%; border-collapse: collapse; margin-top:10px; font-size:14px; }
+    th, td { border:1px solid #ccc; padding:6px; text-align:left; }
+    th { background:#eee; }
+    #previewHtml { background:#fafafa; min-height:120px; padding:10px; border:1px solid #ccc; border-radius:4px; }
+    #errorBox { color:red; font-weight:bold; margin-top:10px; }
+    .chips { margin-top:10px; }
+    .chip { display:inline-block; margin:3px; padding:4px 8px; background:#e0e0e0; border-radius:20px; cursor:pointer; }
+  </style>
 </head>
 <body>
-  <header class="hero">
-    <div class="hero-inner">
-      <h1>Hechos Relevantes</h1>
-      <p class="tagline">WhatsApp + Word (Arial 12) + CSV • Múltiples casos • Catálogos editables</p>
-    </div>
+  <header>
+    <h1>Hechos Relevantes</h1>
   </header>
+  <div class="container">
 
-  <main class="wrap">
-    <div id="errorBox" class="alert" hidden></div>
-
-    <!-- 0) Hechos guardados -->
-    <section class="card">
-      <h2>0) Hechos guardados</h2>
-      <div class="grid">
-        <label>Nombre del hecho
-          <input id="caseName" placeholder="Se autocompleta con Carátula + Fecha + (PU)"/>
-        </label>
-        <div class="row" style="align-items:flex-end">
-          <button class="btn" id="saveCase">Guardar nuevo</button>
-          <button class="btn ghost" id="updateCase">Actualizar seleccionado</button>
-          <button class="btn ghost" id="deleteCase">Borrar seleccionado</button>
-        </div>
+    <!-- Datos generales -->
+    <section>
+      <h2>Datos generales</h2>
+      <label>Fecha: <input type="date" id="g_fecha_dia"></label>
+      <label>Tipo exp: 
+        <select id="g_tipoExp">
+          <option value="PU">PU</option>
+          <option value="IPP">IPP</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </label>
+      <label>Número: <input type="text" id="g_numExp"></label>
+      <label>Partido: 
+        <select id="g_partido">
+          <option value="">—</option>
+          <option value="General Pueyrredon">General Pueyrredon</option>
+          <option value="Balcarce">Balcarce</option>
+          <option value="Mar Chiquita">Mar Chiquita</option>
+          <option value="General Alvarado">General Alvarado</option>
+        </select>
+      </label>
+      <label>Localidad: <select id="g_localidad"></select></label>
+      <label>Dependencia: <select id="g_dep"></select></label>
+      <div id="g_dep_manual_wrap" style="display:none;">
+        <label>Otra dependencia: <input type="text" id="g_dep_manual"></label>
       </div>
+      <label>Carátula: <input type="text" id="g_car"></label>
+      <label>Subtítulo: <input type="text" id="g_sub"></label>
+      <label>Esclarecido:
+        <select id="g_ok">
+          <option value="no">No</option>
+          <option value="si">Sí</option>
+        </select>
+      </label>
+      <label>UFI: <input type="text" id="g_ufi"></label>
+      <label>Coordenadas: <input type="text" id="g_coord"></label>
+      <label><input type="checkbox" id="g_relevante"> Relevante</label>
+      <label><input type="checkbox" id="g_supervisado"> Supervisado</label>
+    </section>
 
-      <div class="small" style="margin-top:6px">
-        Seleccioná 1 (radio) para cargar/actualizar o varios (checkbox) para exportar.
-      </div>
+    <!-- Involucrados civiles -->
+    <section>
+      <h2>Involucrados civiles</h2>
+      <label>Nombre: <input id="c_nombre"></label>
+      <label>Apellido: <input id="c_apellido"></label>
+      <label>Edad: <input id="c_edad"></label>
+      <label>Género: <input id="c_genero"></label>
+      <label>DNI: <input id="c_dni"></label>
+      <label>País: <input id="c_pais"></label>
+      <label>Localidad domicilio: <input id="c_loc"></label>
+      <label>Calle domicilio: <input id="c_calle"></label>
+      <label>Vínculo: 
+        <select id="c_vinculo">
+          <option>Victima</option>
+          <option>Imputado</option>
+          <option>Sindicado</option>
+          <option>Testigo</option>
+          <option>Denunciante</option>
+        </select>
+      </label>
+      <label>Óbito: 
+        <select id="c_obito">
+          <option value="false">No</option>
+          <option value="true">Sí</option>
+        </select>
+      </label>
+      <button id="addCivil">Agregar involucrado</button>
+      <div id="civilesList"></div>
+    </section>
 
-      <!-- Buscador -->
-      <div class="row" style="gap:8px;align-items:center;margin-top:8px">
-        <label class="small">Buscar</label>
-        <input id="caseSearch" placeholder="Filtrar por nombre, fecha, PU, dependencia, etc." style="max-width:420px">
-      </div>
+    <!-- Personal de fuerza -->
+    <section>
+      <h2>Personal de fuerza</h2>
+      <label>Nombre: <input id="f_nombre"></label>
+      <label>Apellido: <input id="f_apellido"></label>
+      <label>Edad: <input id="f_edad"></label>
+      <label>Fuerza: <input id="f_fuerza"></label>
+      <label>Jerarquía: <input id="f_jerarquia"></label>
+      <label>Legajo: <input id="f_legajo"></label>
+      <label>Destino: <input id="f_destino"></label>
+      <label>Localidad domicilio: <input id="f_loc"></label>
+      <label>Calle domicilio: <input id="f_calle"></label>
+      <label>Vínculo: 
+        <select id="f_vinculo">
+          <option>Imputado</option>
+          <option>Sindicado</option>
+          <option>Detenido</option>
+        </select>
+      </label>
+      <label>Óbito: 
+        <select id="f_obito">
+          <option value="false">No</option>
+          <option value="true">Sí</option>
+        </select>
+      </label>
+      <button id="addFuerza">Agregar personal</button>
+      <div id="fuerzasList"></div>
+    </section>
 
-      <div id="casesList" class="preview" style="max-height:240px;overflow:auto">Sin hechos guardados.</div>
+    <!-- Objetos -->
+    <section>
+      <h2>Objetos</h2>
+      <label>Descripción: <input id="o_desc"></label>
+      <label>Vínculo: 
+        <select id="o_vinc">
+          <option>Secuestro</option>
+          <option>Sustraccion</option>
+          <option>Hallazgo</option>
+          <option>Otro</option>
+        </select>
+      </label>
+      <button id="addObjeto">Agregar objeto</button>
+      <div id="objetosList"></div>
+    </section>
 
-      <div class="row" style="margin-top:10px;flex-wrap:wrap;gap:8px">
-        <button class="btn ghost" id="loadSelected">Cargar seleccionado</button>
-        <button class="btn success" id="exportCSV">Exportar CSV (seleccionados)</button>
-        <button class="btn success" id="downloadWordMulti">Descargar Word (seleccionados)</button>
-        <button class="btn danger" id="avisarHecho">Avisar hecho importante</button>
+    <!-- Cuerpo -->
+    <section>
+      <h2>Cuerpo del hecho</h2>
+      <textarea id="cuerpo" rows="12"></textarea>
+      <div class="chips" id="tagHelper"></div>
+    </section>
 
-        <button class="btn ghost" id="backupJSON">Respaldar (JSON)</button>
-        <button class="btn ghost" id="restoreJSON">Restaurar (JSON)</button>
-        <button class="btn ghost" id="mergeJSON">Fusionar (JSON) directo</button>
-        <input type="file" id="restoreFile" accept="application/json" style="display:none"/>
-        <input type="file" id="mergeFile"   accept="application/json" style="display:none"/>
+    <!-- Preview -->
+    <section>
+      <h2>Vista previa</h2>
+      <div id="tituloCompuesto"></div>
+      <div id="subCompuesto"></div>
+      <div id="previewHtml"></div>
+      <div id="errorBox" hidden></div>
+    </section>
+
+    <!-- Acciones -->
+    <section>
+      <h2>Acciones</h2>
+      <button id="generar">Generar vista previa</button>
+      <button id="copiarWA">Copiar para WhatsApp</button>
+      <button id="descargarWord">Descargar Word</button>
+      <button id="downloadWordMulti">Descargar seleccionados en Word</button>
+      <button id="avisarHecho" class="ghost">Avisar hecho importante</button>
+      <button id="clearAll" class="ghost">Borrar formulario</button>
+    </section>
+
+    <!-- Lista de casos -->
+    <section>
+      <h2>Hechos guardados</h2>
+      <label>Nombre auto generado: <input type="text" id="caseName"></label>
+      <input type="text" id="caseSearch" placeholder="Buscar...">
+      <div id="casesList">Sin hechos guardados.</div>
+      <div style="margin-top:10px;">
+        <button id="saveCase">Guardar hecho</button>
+        <button id="updateCase">Actualizar</button>
+        <button id="loadSelected">Cargar</button>
+        <button id="deleteCase">Borrar</button>
+        <button id="exportCSV">Exportar CSV</button>
+        <button id="backupJSON">Backup JSON</button>
+        <button id="restoreJSON">Restaurar</button>
+        <button id="mergeJSON">Fusionar</button>
       </div>
     </section>
 
-    <!-- 1) Carga de datos -->
-    <section class="card">
-      <h2>1) Carga de datos</h2>
-
-      <div class="tabs" data-tabs>
-        <div class="tabs-nav">
-          <button class="tab is-active" data-tab="t-generales">Datos generales</button>
-          <button class="tab" data-tab="t-civiles">Civiles</button>
-          <button class="tab" data-tab="t-fuerzas">Personal Fuerzas</button>
-          <button class="tab" data-tab="t-objetos">Objetos</button>
-          <button class="tab" data-tab="t-catalogos">Catálogos</button>
-        </div>
-
-        <!-- Generales -->
-        <div class="tab-panel is-active" id="t-generales">
-          <div class="grid">
-            <label>Fecha <input type="date" id="g_fecha_dia"></label>
-
-            <label>Tipo expediente
-              <select id="g_tipoExp">
-                <option value="PU" selected>PU</option>
-                <option value="IPP">IPP</option>
-                <option value="Otro">Otro</option>
-              </select>
-            </label>
-            <label>Número <input id="g_numExp" placeholder="270840"></label>
-
-            <label>Partido
-              <select id="g_partido">
-                <option value="">— Elegir —</option>
-                <option>General Pueyrredon</option>
-                <option>Balcarce</option>
-                <option>Mar Chiquita</option>
-                <option>General Alvarado</option>
-              </select>
-            </label>
-            <label>Localidad
-              <select id="g_localidad"></select>
-            </label>
-          </div>
-
-          <div class="grid">
-            <label>Dependencia
-              <select id="g_dep">
-                <option value="">— Elegir —</option>
-                <option value="__manual__">Escribir manualmente…</option>
-              </select>
-            </label>
-            <label id="g_dep_manual_wrap" style="display:none">Dependencia (manual)
-              <input id="g_dep_manual" placeholder="Ej.: Subcomisaría Camet"/>
-            </label>
-
-            <label>Carátula <input id="g_car" placeholder="Robo agravado en poblado en banda y por el uso de arma de fuego"></label>
-            <label>Subtítulo <input id="g_sub" placeholder="Entradera"></label>
-          </div>
-
-          <div class="grid">
-            <label>Estado
-              <select id="g_ok">
-                <option value="no">No esclarecido (Rojo)</option>
-                <option value="si">Esclarecido (Azul)</option>
-              </select>
-            </label>
-            <label>UFI / Intervención <input id="g_ufi" placeholder="UFI 10 Dr. Pérez"></label>
-            <label>Coordenadas <input id="g_coord" placeholder="-38.000, -57.555"></label>
-            <label class="row" style="align-items:center;gap:10px">
-              <input type="checkbox" id="g_relevante" /> <span>Relevante</span>
-            </label>
-            <label class="row" style="align-items:center;gap:10px">
-              <input type="checkbox" id="g_supervisado" /> <span>Supervisado</span>
-            </label>
-          </div>
-
-          <div class="title-preview">
-            <div id="tituloCompuesto" class="titleline">—</div>
-            <div id="subCompuesto" class="subtitleline">—</div>
-          </div>
-        </div>
-
-        <!-- Civiles -->
-        <div class="tab-panel" id="t-civiles">
-          <div class="grid">
-            <label>Nombre <input id="c_nombre"></label>
-            <label>Apellido <input id="c_apellido"></label>
-            <label>Edad <input id="c_edad"></label>
-            <label>Género
-              <select id="c_genero">
-                <option value="">—</option><option>M</option><option>F</option><option>Otro</option>
-              </select>
-            </label>
-            <label>DNI <input id="c_dni"></label>
-            <label>País de origen <input id="c_pais"></label>
-            <label>Localidad domicilio <input id="c_loc"></label>
-            <label>Calle domicilio <input id="c_calle"></label>
-            <label>Vínculo
-              <select id="c_vinculo">
-                <option>Victima</option>
-                <option>Imputado</option>
-                <option>Sindicado</option>
-                <option>Denunciante</option>
-                <option>Testigo</option>
-                <option>PP</option>
-                <option>Aprehendido</option>
-                <option>Detenido</option>
-                <option>Menor</option>
-                <option>NN</option>
-                <option>Damnificado institucional</option>
-              </select>
-            </label>
-            <label>¿Óbito?
-              <select id="c_obito"><option value="false">No</option><option value="true">Sí</option></select>
-            </label>
-          </div>
-          <div class="row">
-            <button class="btn" id="addCivil">Agregar involucrado</button>
-          </div>
-          <div id="civilesList" class="table"></div>
-        </div>
-
-        <!-- Fuerzas -->
-        <div class="tab-panel" id="t-fuerzas">
-          <div class="grid">
-            <label>Nombre <input id="f_nombre"></label>
-            <label>Apellido <input id="f_apellido"></label>
-            <label>Edad <input id="f_edad"></label>
-            <label>Fuerza <input id="f_fuerza" placeholder="Policía / Prefectura / etc."></label>
-            <label>Legajo <input id="f_legajo"></label>
-            <label>Jerarquía <input id="f_jerarquia"></label>
-            <label>Destino <input id="f_destino"></label>
-            <label>Localidad domicilio <input id="f_loc"></label>
-            <label>Calle domicilio <input id="f_calle"></label>
-            <label>Vínculo
-              <select id="f_vinculo">
-                <option>Imputado</option>
-                <option>Sindicado</option>
-                <option>Testigo</option>
-                <option>Denunciante</option>
-                <option>Victima</option>
-                <option>PP</option>
-              </select>
-            </label>
-            <label>¿Óbito?
-              <select id="f_obito"><option value="false">No</option><option value="true">Sí</option></select>
-            </label>
-          </div>
-          <div class="row">
-            <button class="btn" id="addFuerza">Agregar personal</button>
-          </div>
-          <div id="fuerzasList" class="table"></div>
-        </div>
-
-        <!-- Objetos -->
-        <div class="tab-panel" id="t-objetos">
-          <div class="grid">
-            <label>Descripción <input id="o_desc" placeholder="Celular iPhone 13, $ 2.000.000 y USD 20.000."></label>
-            <label>Vínculo
-              <select id="o_vinc">
-                <option>Secuestro</option>
-                <option>Sustraccion</option>
-                <option>Hallazgo</option>
-                <option>Otro</option>
-              </select>
-            </label>
-          </div>
-          <div class="row">
-            <button class="btn danger" id="addObjeto">Agregar objeto</button>
-          </div>
-          <div id="objetosList" class="table"></div>
-        </div>
-
-        <!-- Catálogos -->
-        <div class="tab-panel" id="t-catalogos">
-          <p class="small">Editá por Partido. Un ítem por línea. Guardá para aplicar en los desplegables.</p>
-          <div class="grid">
-            <label>Partido
-              <select id="cat_partidoSel">
-                <option>General Pueyrredon</option>
-                <option>Balcarce</option>
-                <option>Mar Chiquita</option>
-                <option>General Alvarado</option>
-              </select>
-            </label>
-          </div>
-          <div class="grid">
-            <label>Localidades (una por línea)
-              <textarea id="cat_localidades" rows="8"></textarea>
-            </label>
-            <label>Dependencias (una por línea)
-              <textarea id="cat_dependencias" rows="8"></textarea>
-            </label>
-          </div>
-          <div class="row">
-            <button class="btn" id="cat_guardar">Guardar catálogos del partido</button>
-            <button class="btn ghost" id="cat_reset">Restaurar valores de ejemplo</button>
-          </div>
-        </div>
-      </div>
+    <!-- Editor de catálogos -->
+    <section>
+      <h2>Editor de catálogos</h2>
+      <label>Partido: 
+        <select id="cat_partidoSel">
+          <option>General Pueyrredon</option>
+          <option>Balcarce</option>
+          <option>Mar Chiquita</option>
+          <option>General Alvarado</option>
+        </select>
+      </label>
+      <label>Localidades: <textarea id="cat_localidades" rows="5"></textarea></label>
+      <label>Dependencias: <textarea id="cat_dependencias" rows="5"></textarea></label>
+      <button id="cat_guardar">Guardar catálogos</button>
+      <button id="cat_reset" class="ghost">Restaurar valores</button>
     </section>
-
-    <!-- 2) Resumen -->
-    <section class="card">
-      <h2>2) Resumen / Cuerpo</h2>
-      <textarea id="cuerpo" class="bigtext" rows="16" placeholder="Redactá el cuerpo. Ej.: &#10;Fecha... entrevistan con #victima:0 ... sustrayendo #secuestro:0 ..."></textarea>
-      <p class="hint">
-        Estilos rápidos: <code>*negrita*</code>, <code>_itálica_</code> (se usa en objetos), <code>!subrayado!</code>.<br/>
-        Etiquetas disponibles:
-      </p>
-      <div id="tagHelper" class="chips"></div>
-    </section>
-
-    <!-- 3) Salidas -->
-    <section class="card">
-      <h2>3) Salidas</h2>
-      <div class="row" style="flex-wrap:wrap;gap:10px;align-items:center">
-        <button class="btn" id="generar">Generar vista previa</button>
-        <button class="btn ghost" id="copiarWA">Copiar WhatsApp</button>
-        <label class="row small" style="gap:8px;align-items:center">
-          <input type="checkbox" id="wa_merge" checked/>
-          <span>Unir renglones para WhatsApp (deja doble Enter como párrafo)</span>
-        </label>
-        <button class="btn success" id="descargarWord">Descargar Word</button>
-        <button class="btn success" id="exportCSV1">Exportar CSV (este)</button>
-        <button class="btn ghost" id="clearAll">Borrar todo (limpiar formulario)</button>
-      </div>
-      <h3>Vista previa HTML</h3>
-      <div id="previewHtml" class="preview"></div>
-    </section>
-  </main>
-
-  <footer class="foot"><span>Ctrl + Enter = Generar</span></footer>
-
-  <!-- DOCX -->
-  <script defer src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js"></script>
-  <!-- App -->
-  <script defer src="assets/formatter.js?v=13"></script>
-  <script defer src="assets/tabs.js?v=13"></script>
-  <script defer src="assets/app.js?v=13"></script>
+  </div>
 </body>
 </html>
+
