@@ -4,8 +4,10 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Hechos Relevantes v9</title>
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="tabs.css">
+
+  <!-- Estilos (una sola vez, rutas relativas) -->
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./tabs.css">
 </head>
 <body>
 <header class="topbar">
@@ -14,7 +16,8 @@
     <div class="subtitle">v9 — DDIC</div>
   </div>
   <div class="logo-box">
-    <img src="assets/LogoDDIC.png" alt="Logo" onerror="this.style.display='none'"/>
+    <!-- El logo es opcional. Si no existe, simplemente no se muestra -->
+    <img src="./assets/LogoDDIC.png" alt="Logo DDIC" onerror="this.style.display='none'"/>
   </div>
 </header>
 
@@ -293,9 +296,11 @@
   </section>
 </main>
 
-<script defer src="assets/tabs.js"></script>
-<script defer src="formatter.js"></script>
+<!-- Scripts (una sola vez, rutas relativas) -->
+<script defer src="./tabs.js"></script>
+<script defer src="./formatter.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js"></script>
-<script defer src="app.js"></script>
+<script defer src="./app.js"></script>
 </body>
 </html>
+
