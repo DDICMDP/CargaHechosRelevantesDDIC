@@ -1,4 +1,4 @@
-// ===== app.js (versión PRO) =====
+// ===== app.js (V9) =====
 (function () {
   // ---------- Helpers ----------
   const $ID = (id) => document.getElementById(id);
@@ -7,7 +7,22 @@
   const setv = (id, v) => { if ($ID(id)) $ID(id).value = v; };
   const chk = (id) => !!$ID(id)?.checked;
   const setchk = (id, v) => { if ($ID(id)) $ID(id).checked = !!v; };
-  const styleShow = (id, show) => { if ($ID(id)) $ID(id).style.display = show ? "inline-block" : "none"; };
+  const styleShow = (id, show) => { if ($ID(id)) $ID(id).style.display = show ? "block" : "none"; };
+
+  // Insertar texto en la posición del cursor
+  function insertAtCursor(textarea, text) {
+    if (!textarea) return;
+    const start = textarea.selectionStart ?? textarea.value.length;
+    const end   = textarea.selectionEnd   ?? textarea.value.length;
+    const before = textarea.value.slice(0, start);
+    const after  = textarea.value.slice(end);
+    const needsSpace = before && !/\s$/.test(before) ? " " : "";
+    const inserted = needsSpace + text + " ";
+    textarea.value = before + inserted + after;
+    const pos = (before + inserted).length;
+    textarea.setSelectionRange(pos, pos);
+    textarea.focus();
+  }
 
   // ---------- Constantes ----------
   const CASEKEY = "hr_cases_v1";
@@ -21,36 +36,28 @@
     return `${day}-${m}-${y}`;
   };
 
-  // ---------- Catálogos: valores demo + persistencia ----------
+  // ---------- Catálogos ----------
   const DEFAULT_CATALOGS = {
     "General Pueyrredon": {
-      localidades: ["Mar del Plata", "Batán", "Sierra de los Padres", "Chapadmalal", "Estación Camet", "El Boquerón"],
+      localidades: ["Mar del Plata","Batán","Sierra de los Padres","Chapadmalal","Estación Camet","El Boquerón"],
       dependencias: [
-        "Cria. Mar del Plata 1ra.",
-        "Cria. Mar del Plata 2da.",
-        "Cria. Mar del Plata 3ra.",
-        "Cria. Mar del Plata 4ta.",
-        "Cria. Mar del Plata 5ta.",
-        "Cria. Mar del Plata 6ta.",
-        "Subcria. Camet",
-        "Subcria. Acantilados",
-        "DDI Mar del Plata",
-        "Comisaría de la Mujer MdP",
-        "UPPL MdP",
-        "CPO MdP",
+        "Cria. Mar Del Plata 1ra.", "Cria. Mar Del Plata 2da.", "Cria. Mar Del Plata 3ra.",
+        "Cria. Mar Del Plata 4ta.", "Cria. Mar Del Plata 5ta.", "Cria. Mar Del Plata 6ta.",
+        "Subcria. Camet", "Subcria. Acantilados", "DDI Mar del Plata",
+        "Comisaría de la Mujer MdP", "UPPL MdP", "CPO MdP"
       ]
     },
     "Balcarce": {
-      localidades: ["Balcarce", "San Agustín", "Los Pinos"],
-      dependencias: ["Cria. Balcarce", "DDI Balcarce", "Cria. de la Mujer Balcarce", "Destac. San Agustín"]
+      localidades: ["Balcarce","San Agustín","Los Pinos"],
+      dependencias: ["Cria. Balcarce","DDI Balcarce","Cria. de la Mujer Balcarce","Destac. San Agustín"]
     },
     "Mar Chiquita": {
-      localidades: ["Coronel Vidal", "Santa Clara del Mar", "Vivoratá", "Mar de Cobo", "La Caleta", "Mar Chiquita"],
-      dependencias: ["Cria. Cnel. Vidal", "Cria. Sta. Clara del Mar", "Cria. de la Mujer Mar Chiquita", "Destac. Mar de Cobo"]
+      localidades: ["Coronel Vidal","Santa Clara del Mar","Vivoratá","Mar de Cobo","La Caleta","Mar Chiquita"],
+      dependencias: ["Cria. Cnel. Vidal","Cria. Sta. Clara del Mar","Cria. de la Mujer Mar Chiquita","Destac. Mar de Cobo"]
     },
     "General Alvarado": {
-      localidades: ["Miramar", "Mechongué", "Comandante N. Otamendi", "Mar del Sud"],
-      dependencias: ["Cria. Miramar", "Cria. Otamendi", "Cria. de la Mujer Gral. Alvarado", "Destac. Mar del Sud"]
+      localidades: ["Miramar","Mechongué","Comandante N. Otamendi","Mar del Sud"],
+      dependencias: ["Cria. Miramar","Cria. Otamendi","Cria. de la Mujer Gral. Alvarado","Destac. Mar del Sud"]
     }
   };
   const getCatalogs = () => {
@@ -65,7 +72,7 @@
   };
   const setCatalogs = (obj) => localStorage.setItem(CATKEY, JSON.stringify(obj));
 
-  // ---------- Casos (persistencia) ----------
+  // ---------- Casos ----------
   const getCases = () => { try { return JSON.parse(localStorage.getItem(CASEKEY) || "[]"); } catch { return []; } };
   const setCases = (a) => localStorage.setItem(CASEKEY, JSON.stringify(a));
   const freshId = () => "c_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
@@ -78,20 +85,16 @@
     (list || []).forEach(v => sel.append(new Option(v, v)));
     if (includeManual) sel.append(new Option("Escribir manualmente…", "__manual__"));
   }
-
   function loadPartidos() {
     const cat = getCatalogs();
     const partidos = Object.keys(cat);
     fillSelect($ID("g_partido"), partidos);
-    fillSelect($ID("cat_partidoSel"), partidos);
   }
-
   function resolvedDependencia() {
     const v = val("g_dep");
     if (v === "__manual__") return val("g_dep_manual").trim();
     return v;
   }
-
   function loadLocalidadesDeps() {
     const cat = getCatalogs();
     const partido = val("g_partido");
@@ -107,25 +110,18 @@
     fillSelect(depSel, cat[partido].dependencias || [], { includeManual: true });
     styleShow("g_dep_manual_wrap", val("g_dep") === "__manual__");
   }
-
-  $ID("g_partido")?.addEventListener("change", () => {
-    loadLocalidadesDeps();
-    renderTitlePreview();
-  });
-  $ID("g_dep")?.addEventListener("change", () => {
-    styleShow("g_dep_manual_wrap", val("g_dep") === "__manual__");
-    renderTitlePreview();
-  });
+  $ID("g_partido")?.addEventListener("change", () => { loadLocalidadesDeps(); renderTitlePreview(); });
+  $ID("g_dep")?.addEventListener("change", () => { styleShow("g_dep_manual_wrap", val("g_dep") === "__manual__"); renderTitlePreview(); });
   $ID("g_localidad")?.addEventListener("change", renderTitlePreview);
 
-  // ---------- Stores de editores ----------
+  // ---------- TitleCase ----------
   const TitleCase = (s) =>
     (s || "").toLowerCase().split(/(\s|-)/).map(p => {
       if (p.trim() === "" || p === "-") return p;
       return p.charAt(0).toUpperCase() + p.slice(1);
     }).join("");
 
-  // Civiles
+  // ---------- Stores ----------
   const CIV = {
     store: [],
     editingIndex: null,
@@ -195,7 +191,6 @@
     }
   };
 
-  // Personal Fuerzas
   const FZA = {
     store: [],
     editingIndex: null,
@@ -256,7 +251,6 @@
     }
   };
 
-  // Objetos
   const OBJ = {
     store: [],
     editingIndex: null,
@@ -302,26 +296,23 @@
     }
   };
 
-  // ---------- Etiquetas disponibles para ayudar (#victima:0, #pf:0, #secuestro:0, etc.) ----------
+  // ---------- Etiquetas disponibles (chips) ----------
   const ROLE_KEYS = ["victima", "imputado", "sindicado", "denunciante", "testigo", "interviniente", "aprehendido", "detenido"];
-  const OBJ_KEYS = ["secuestro", "sustraccion", "hallazgo", "otro"];
+  const OBJ_KEYS  = ["secuestro", "sustraccion", "hallazgo", "otro"];
 
   function renderTagHelper() {
     const box = $ID("tagHelper");
     if (!box) return;
     const chips = [];
 
-    // Civiles y fuerzas por rol
     const allPeople = (CIV.store || []).concat(FZA.store || []);
     ROLE_KEYS.forEach(role => {
       const arr = allPeople.filter(p => (p.vinculo || "").toLowerCase() === role);
       arr.forEach((_, i) => chips.push(`#${role}:${i}`));
     });
 
-    // Fuerzas indice directo (pf:i)
     (FZA.store || []).forEach((_, i) => chips.push(`#pf:${i}`));
 
-    // Objetos por categoría
     OBJ_KEYS.forEach(cat => {
       const arr = (OBJ.store || []).filter(o => (o.vinculo || "").toLowerCase() === cat);
       arr.forEach((_, i) => chips.push(`#${cat}:${i}`));
@@ -331,21 +322,15 @@
 
     box.innerHTML = chips.map(t => `<button type="button" class="chip" data-tag="${t}">${t}</button>`).join("");
     box.querySelectorAll("[data-tag]").forEach(btn => {
-      btn.onclick = () => {
-        const ta = $ID("cuerpo");
-        const cur = ta.value;
-        const insert = (cur && !/\s$/.test(cur)) ? ` ${btn.dataset.tag}` : btn.dataset.tag;
-        ta.value = cur + insert + " ";
-        ta.focus();
-      };
+      btn.onclick = () => insertAtCursor($ID("cuerpo"), btn.dataset.tag);
     });
   }
 
-  // ---------- Build datos desde formulario ----------
+  // ---------- Build desde form ----------
   function buildDataFromForm() {
     const tipo = val("g_tipoExp") || "PU";
     const num = (val("g_numExp") || "").trim();
-    const puFull = num ? `${tipo} ${num}` : ""; // para formatter.js
+    const puFull = num ? `${tipo} ${num}` : "";
 
     return {
       generales: {
@@ -379,16 +364,15 @@
     if (t) t.textContent = out.forDocx.titulo;
     if (s) s.textContent = out.forDocx.subtitulo || "";
   }
-
   function preview() {
     const out = HRFMT.buildAll(buildDataFromForm());
     renderTitlePreview();
     const prev = $ID("previewHtml");
-    if (prev) prev.textContent = out.waLong; // con saltos y * _ visibles
+    if (prev) prev.textContent = out.waLong; // se ve igual que va a WhatsApp (ya sin salto extra)
     return out;
   }
 
-  // ---------- Render lista de casos + buscador ----------
+  // ---------- Lista de casos ----------
   function renderCases() {
     const box = $ID("casesList");
     if (!box) return;
@@ -410,7 +394,6 @@
     }</tbody></table></div>`;
     attachCaseSearch();
   }
-
   function attachCaseSearch() {
     const input = $ID("caseSearch");
     const box = $ID("casesList");
@@ -422,25 +405,18 @@
       });
     };
   }
-
-  const selectedRadio = () => {
-    const r = document.querySelector('input[name="caseSel"]:checked');
-    return r ? r.getAttribute("data-id") : null;
-  };
+  const selectedRadio  = () => { const r = document.querySelector('input[name="caseSel"]:checked'); return r ? r.getAttribute("data-id") : null; };
   const selectedChecks = () => $$(".caseCheck:checked").map(x => x.getAttribute("data-id"));
 
   // ---------- Botones ----------
   const bind = (id, fn) => { const n = $ID(id); if (n) n.onclick = fn; };
 
-  // Agregar / editar
-  bind("addCivil", () => CIV.addOrUpdate());
+  bind("addCivil",  () => CIV.addOrUpdate());
   bind("addFuerza", () => FZA.addOrUpdate());
   bind("addObjeto", () => OBJ.addOrUpdate());
 
-  // Generar vista previa
-  bind("generar", () => { preview(); });
+  bind("generar",   () => { preview(); });
 
-  // Copiar WhatsApp (actual o selección)
   bind("copiarWA", () => {
     const ids = selectedChecks();
     if (!ids.length) {
@@ -455,13 +431,11 @@
     navigator.clipboard.writeText(joined).then(() => alert("Varios copiados"));
   });
 
-  // Word (actual)
   bind("descargarWord", async () => {
     try { await HRFMT.downloadDocx(buildDataFromForm(), (window.docx || {})); }
     catch (e) { console.error(e); alert("Error generando Word"); }
   });
 
-  // Word (varios)
   bind("downloadWordMulti", async () => {
     const ids = selectedChecks();
     if (!ids.length) { alert("Seleccioná al menos un hecho (checkbox)."); return; }
@@ -471,7 +445,6 @@
 
     const JUST = AlignmentType.JUSTIFIED;
     const toRuns = (txt) => {
-      // interpreta * y _ del WhatsApp
       const parts = (txt || "").split(/(\*|_)/g);
       let B = false, I = false;
       const runs = [];
@@ -489,7 +462,9 @@
     selected.forEach((snap, i) => {
       const built = HRFMT.buildAll(snap);
       children.push(new Paragraph({ children: [new TextRun({ text: built.forDocx.titulo, bold: true })] }));
-      children.push(new Paragraph({ children: [new TextRun({ text: built.forDocx.subtitulo, bold: true, color: built.forDocx.color })] }));
+      if (built.forDocx.subtitulo) {
+        children.push(new Paragraph({ children: [new TextRun({ text: built.forDocx.subtitulo, bold: true, color: built.forDocx.color })] }));
+      }
       (built.forDocx.bodyHtml || "").split(/\n\n+/).forEach(p => {
         children.push(new Paragraph({ children: toRuns(p), alignment: JUST, spacing: { after: 200 } }));
       });
@@ -508,16 +483,13 @@
     a.click();
   });
 
-  // CSV (actual o selección)
   bind("exportCSV", () => {
     const ids = selectedChecks();
     const list = ids.length ? getCases().filter(c => ids.includes(c.id)) : [buildDataFromForm()];
     HRFMT.downloadCSV(list);
   });
-  // Alias del botón que quedó en index
   bind("exportCSV1", () => { HRFMT.downloadCSV([buildDataFromForm()]); });
 
-  // Limpiar formulario (NO borra guardados)
   bind("clearAll", () => {
     if (!confirm("¿Borrar todos los campos del formulario actual? Esto no borra los 'Hechos guardados'.")) return;
 
@@ -537,6 +509,8 @@
   });
 
   // Guardar/Actualizar/Borrar/Cargar
+  const selectedRadio  = () => { const r = document.querySelector('input[name="caseSel"]:checked'); return r ? r.getAttribute("data-id") : null; };
+
   bind("saveCase", () => {
     const snap = buildDataFromForm();
     const built = HRFMT.buildAll(snap);
@@ -596,20 +570,16 @@
       alert(`Fusión completa: agregados ${added}, saltados ${skipped}.`);
     } catch (e) { console.error(e); alert("No se pudo leer el archivo JSON."); }
   }
-
-  bind("backupJSON", () => exportBackupJSON());
-  bind("restoreJSON", () => {
-    const input = $ID("restoreFile"); if (!input) return; input.value = ""; input.click();
+  bind("backupJSON",  () => exportBackupJSON());
+  bind("restoreJSON", () => { const input = $ID("restoreFile"); if (!input) return; input.value = ""; input.click();
     input.onchange = () => { if (input.files?.[0]) importBackupJSON(input.files[0], confirm("¿Reemplazar todo lo guardado por el archivo?\nAceptar = Reemplazar • Cancelar = Fusionar")); };
   });
-  bind("mergeJSON", () => {
-    const input = $ID("mergeFile"); if (!input) return; input.value = ""; input.click();
+  bind("mergeJSON",   () => { const input = $ID("mergeFile"); if (!input) return; input.value = ""; input.click();
     input.onchange = () => { if (input.files?.[0]) importBackupJSON(input.files[0], false); };
   });
 
-  // ---------- Cargar snapshot a formulario ----------
+  // ---------- Snapshot -> formulario ----------
   function loadSnapshot(s) {
-    // fecha dd-mm-aaaa -> input date yyyy-mm-dd
     const fh = s.generales?.fecha_hora || "";
     const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(fh);
     if (m) setv("g_fecha_dia", `${m[3]}-${m[2]}-${m[1]}`); else setv("g_fecha_dia", "");
@@ -620,7 +590,6 @@
     setv("g_partido", s.generales?.partido || ""); loadLocalidadesDeps();
     setv("g_localidad", s.generales?.localidad || "");
 
-    // dependencia (manual si no está en catálogo)
     const cat = getCatalogs();
     const partido = val("g_partido");
     const deps = (cat[partido]?.dependencias || []);
@@ -643,8 +612,8 @@
     renderTitlePreview(); renderTagHelper();
   }
 
-  // ---------- Eventos que refrescan preview/título ----------
-  ["g_fecha_dia", "g_tipoExp", "g_numExp", "g_partido", "g_localidad", "g_dep", "g_dep_manual", "g_car", "g_sub", "g_ok", "g_ufi", "g_coord", "g_relevante", "g_supervisado"]
+  // ---------- Eventos de refresco ----------
+  ["g_fecha_dia","g_tipoExp","g_numExp","g_partido","g_localidad","g_dep","g_dep_manual","g_car","g_sub","g_ok","g_ufi","g_coord","g_relevante","g_supervisado"]
     .forEach(id => {
       const n = $ID(id); if (!n) return;
       const ev = (n.tagName === "SELECT" || n.type === "checkbox" || n.type === "date") ? "change" : "input";
@@ -661,7 +630,6 @@
     renderCases();
   });
 
-  // ---------- Accesos en global (debug) ----------
+  // Debug global
   window.__DEBUG = { CIV, FZA, OBJ };
-
 })();
