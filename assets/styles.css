@@ -1,14 +1,14 @@
 /* ===== Estética V9 ===== */
 :root{
-  --bg:#0f172a;            /* slate-900 */
-  --card:#111827;          /* gray-900 */
-  --muted:#334155;         /* slate-700 */
-  --text:#e5e7eb;          /* gray-200 */
-  --title:#f8fafc;         /* slate-50 */
-  --accent:#3b82f6;        /* blue-500 */
-  --accent-2:#22c55e;      /* green-500 */
-  --warn:#ef4444;          /* red-500 */
-  --border:#1f2937;        /* gray-800 */
+  --bg:#0f172a;
+  --card:#111827;
+  --muted:#334155;
+  --text:#e5e7eb;
+  --title:#f8fafc;
+  --accent:#3b82f6;
+  --accent-2:#22c55e;
+  --warn:#ef4444;
+  --border:#1f2937;
   --chip:#0b1222;
   --shadow: 0 10px 20px rgba(0,0,0,.35);
 }
@@ -35,7 +35,7 @@ body{
 .version{ font-size:.85rem; color:#9ca3af; margin-top:4px; }
 
 /* Container */
-.container{ max-width:1200px; margin:20px auto; padding: 0 16px; }
+.container{ max-width:1280px; margin:20px auto; padding: 0 16px; }
 
 /* Card */
 .card{
@@ -60,6 +60,15 @@ input, select, textarea{
 input:focus, select:focus, textarea:focus{ border-color: var(--accent); }
 .chk{ flex-direction:row; align-items:center; gap:8px; }
 
+/* Textarea cuerpo: ancho total y más alto */
+#cuerpo{
+  display:block;
+  width:100%;
+  min-height: 320px;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
 /* Buttons */
 .btn{
   border:none; border-radius:10px; padding:10px 14px; font-weight:600;
@@ -81,7 +90,7 @@ th{ background:#0f172a; color:#cbd5e1; text-align:left; }
 
 /* Preview */
 .title-preview{ font-weight:700; color:#fff; margin-bottom:4px; }
-.subtitle-preview{ font-weight:700; margin-bottom:10px; }
+.subtitle-preview{ font-weight:700; margin-bottom:6px; }
 .preview{
   border:1px dashed #334155; padding:12px; border-radius:10px; min-height:100px;
   white-space: pre-wrap; background:#0b1222;
@@ -100,5 +109,18 @@ th{ background:#0f172a; color:#cbd5e1; text-align:left; }
 /* Search */
 .search{ width: 320px; }
 
-/* Little utilities */
+/* Tabs */
+.tabs{ display:flex; gap:8px; align-items:center; }
+.tab{
+  background:#0b1222; color:#e5e7eb; border:1px solid #1e293b;
+  padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600;
+}
+.tab.active{
+  background: linear-gradient(180deg, #1f2937, #111827);
+  border-color:#334155;
+}
+.tab-content{ display:none; }
+.tab-content.active{ display:block; }
+
+/* util */
 .muted{ color:#94a3b8; font-size:.9rem; }
