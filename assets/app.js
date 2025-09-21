@@ -630,5 +630,68 @@
     cat_loadIntoEditor();
     refreshAutoCaseName();
   });
+    // ===== Avisar Hecho =====
+  bind("avisarHecho", ()=>{
+    const id = selectedRadio(); 
+    if(!id){ alert("Elegí un hecho (radio) para avisar."); return; }
+    const c = getCases().find(x=>x.id===id);
+    if(!c){ alert("No encontrado"); return; }
+
+    const built = HRFMT.buildAll(c);
+    const texto = built.waLong || built.html || "Hecho importante.";
+    navigator.clipboard.writeText(texto).then(()=>{
+      alert("Hecho copiado al portapapeles. Ahora podés pegarlo en WhatsApp 📲");
+    });
+  });
+
+  // ===== Descargar Word Multi =====
+  bind("downloadWordMulti", async ()=>{
+    const ids = selectedChecks(); 
+    if(!ids.length){ alert("Seleccioná al menos un hecho (checkbox)."); return; }
+    const docx = window.docx||{}; 
+    const { Document, Packer, TextRun, Paragraph, AlignmentType } = docx;
+    if(!Document){ showErr("docx no cargada"); return; }
+
+    const toRuns = (html)=>{
+      const parts=(html||"").split(/(<\/?strong>|<\/?em>|<\/?u>)/g);
+      let B=false,I=false,U=false; const runs=[];
+      for(const part of parts){
+        if(part==="<strong>"){B=true;continue;}
+        if(part==="</strong>"){B=false;continue;}
+        if(part==="<em>"){I=true;continue;}
+        if(part==="</em>"){I=false;continue;}
+        if(part==="<u>"){U=true;continue;}
+        if(part==="</u>"){U=false;continue;}
+        if(part){ runs.push(new TextRun({text:part,bold:B,italics:I,underline:U?{}:undefined})); }
+      }
+      return runs;
+    };
+
+    const JUST = AlignmentType.JUSTIFIED;
+    const selected = getCases().filter(c=>ids.includes(c.id));
+    const children = [];
+
+    selected.forEach((snap,i)=>{
+      const built = HRFMT.buildAll(snap);
+      children.push(new Paragraph({ children:[ new TextRun({ text: built.forDocx.titulo, bold:true }) ] }));
+      children.push(new Paragraph({ children:[ new TextRun({ text: built.forDocx.subtitulo, bold:true, color: built.forDocx.color }) ] }));
+      (built.forDocx.bodyHtml||"").split(/\n\n+/).forEach(p=>{
+        children.push(new Paragraph({ children: toRuns(p), alignment: JUST, spacing:{after:200} }));
+      });
+      if(i !== selected.length-1) children.push(new Paragraph({ text:"" }));
+    });
+
+    const doc = new Document({
+      styles:{ default:{ document:{ run:{ font:"Arial", size:24 }, paragraph:{ spacing:{ after:120 } } } } },
+      sections:[{ children }]
+    });
+
+    const blob = await Packer.toBlob(doc);
+    const a=document.createElement('a'); 
+    a.href=URL.createObjectURL(blob);
+    a.download=`Hechos_Seleccionados_${new Date().toISOString().slice(0,10)}.docx`; 
+    a.click();
+  });
+
 })();
 
