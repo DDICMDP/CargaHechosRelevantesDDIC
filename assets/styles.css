@@ -1,6 +1,6 @@
 :root{
   --bg:#0e1320; --card:#141b2d; --ink:#e7ecff; --muted:#9fb0d0;
-  --primary:#3b82f6; --danger:#ef4444; --ok:#1d9bf0; --bad:#ef4444; --border:#27324a;
+  --primary:#3b82f6; --danger:#ef4444; --border:#27324a;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font:16px/1.35 system-ui,Segoe UI,Roboto,Arial,sans-serif}
@@ -23,7 +23,7 @@ textarea.bigtext{min-height:320px;font-size:16px;line-height:1.45}
 .btn:hover{filter:brightness(1.08)}
 .btn.ghost{background:transparent;border:1px solid var(--border)}
 .btn.success{background:#22c55e}
-.btn.danger{background:#ef4444}
+.btn.danger{background:var(--danger)}
 .small{font-size:13px;color:var(--muted)}
 .preview{white-space:pre-wrap;background:#0b1120;border:1px dashed var(--border);padding:12px;border-radius:10px;color:#eaf2ff}
 .table table{width:100%;border-collapse:collapse}
@@ -31,24 +31,13 @@ textarea.bigtext{min-height:320px;font-size:16px;line-height:1.45}
 .title-preview{margin-top:8px}
 .titleline{font-weight:700}
 .subtitleline{margin-top:2px}
-.badge{display:inline-block;padding:0 0 0 0;margin:0}
 .badge strong{font-weight:700}
 .badge.red strong{color:#ff5757}
 .badge.blue strong{color:#5aa0ff}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{background:#18233b;border:1px solid var(--border);color:var(--ink);padding:6px 8px;border-radius:999px;cursor:pointer}
 .foot{max-width:1100px;margin:12px auto 36px;padding:0 16px;color:var(--muted);text-align:right}
-/* ---- Editor ancho total ---- */
-#cuerpo{ width:100%; max-width:100%; display:block; }
-#cuerpo.bigtext{ min-height:420px; }   /* (opcional) un poquito más alto */
-/* === Editor de cuerpo ancho completo === */
-.card textarea#cuerpo {
-  width: 100% !important;
-  max-width: 100% !important;
-  min-height: 400px;   /* más alto */
-  display: block;
-  box-sizing: border-box; /* que no se achique con padding */
-  font-family: monospace; /* opcional, se ve tipo editor */
-}
 
+/* Editor ancho total */
+.card textarea#cuerpo{ width:100% !important; max-width:100% !important; min-height:400px; display:block; box-sizing:border-box; }
 
