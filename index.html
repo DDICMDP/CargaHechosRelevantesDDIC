@@ -4,8 +4,8 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Hechos Relevantes</title>
-  <link rel="stylesheet" href="assets/styles.css?v=12"/>
-  <link rel="stylesheet" href="assets/tabs.css?v=12"/>
+  <link rel="stylesheet" href="assets/styles.css?v=13"/>
+  <link rel="stylesheet" href="assets/tabs.css?v=13"/>
 </head>
 <body>
   <header class="hero">
@@ -42,12 +42,13 @@
         <input id="caseSearch" placeholder="Filtrar por nombre, fecha, PU, dependencia, etc." style="max-width:420px">
       </div>
 
-      <div id="casesList" class="preview" style="max-height:220px;overflow:auto">Sin hechos guardados.</div>
+      <div id="casesList" class="preview" style="max-height:240px;overflow:auto">Sin hechos guardados.</div>
 
       <div class="row" style="margin-top:10px;flex-wrap:wrap;gap:8px">
         <button class="btn ghost" id="loadSelected">Cargar seleccionado</button>
         <button class="btn success" id="exportCSV">Exportar CSV (seleccionados)</button>
         <button class="btn success" id="downloadWordMulti">Descargar Word (seleccionados)</button>
+        <button class="btn danger" id="avisarHecho">Avisar hecho importante</button>
 
         <button class="btn ghost" id="backupJSON">Respaldar (JSON)</button>
         <button class="btn ghost" id="restoreJSON">Restaurar (JSON)</button>
@@ -187,7 +188,7 @@
             <label>Jerarquía <input id="f_jerarquia"></label>
             <label>Destino <input id="f_destino"></label>
             <label>Localidad domicilio <input id="f_loc"></label>
-            <label>Calle domicilio <input id="f_calle"></input></label>
+            <label>Calle domicilio <input id="f_calle"></label>
             <label>Vínculo
               <select id="f_vinculo">
                 <option>Imputado</option>
@@ -280,10 +281,6 @@
         <button class="btn success" id="descargarWord">Descargar Word</button>
         <button class="btn success" id="exportCSV1">Exportar CSV (este)</button>
         <button class="btn ghost" id="clearAll">Borrar todo (limpiar formulario)</button>
-      <div class="acciones">
-        <button id="downloadWordMulti" class="btn">Descargar seleccionados en Word</button>
-        <button id="avisarHecho" class="btn red">Avisar hecho importante</button>
-      </div>
       </div>
       <h3>Vista previa HTML</h3>
       <div id="previewHtml" class="preview"></div>
@@ -292,11 +289,11 @@
 
   <footer class="foot"><span>Ctrl + Enter = Generar</span></footer>
 
-  <!-- Librería DOCX -->
+  <!-- DOCX -->
   <script defer src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js"></script>
   <!-- App -->
-  <script defer src="assets/formatter.js?v=12"></script>
-  <script defer src="assets/tabs.js?v=12"></script>
-  <script defer src="assets/app.js?v=12"></script>
+  <script defer src="assets/formatter.js?v=13"></script>
+  <script defer src="assets/tabs.js?v=13"></script>
+  <script defer src="assets/app.js?v=13"></script>
 </body>
 </html>
