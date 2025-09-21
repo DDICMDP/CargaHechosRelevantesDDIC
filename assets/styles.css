@@ -1,184 +1,74 @@
-/* ===== Reset básico ===== */
-* {
-  box-sizing: border-box;
+body {
+  font-family: Arial, sans-serif;
+  background: #f7f9fc;
   margin: 0;
   padding: 0;
 }
 
-body {
-  font-family: Arial, sans-serif;
-  background: #f7f9fc;
-  color: #333;
-  line-height: 1.5;
-  padding: 20px;
-}
-
-/* ===== Encabezado ===== */
 header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  padding: 10px 30px;
+  background: #2b3a67;
+  color: white;
 }
 
-header h1 {
-  font-size: 20px;
-  color: #222;
-}
-
-header img {
-  width: 60px;
-  height: 60px;
+header .logo {
+  width: 70px;
+  height: 70px;
   border-radius: 50%;
 }
 
-/* ===== Tabs ===== */
-.tabs {
-  display: flex;
-  border-bottom: 2px solid #ccc;
-  margin-bottom: 15px;
+h1 {
+  margin: 0;
 }
 
-.tab {
-  padding: 10px 20px;
-  cursor: pointer;
-  font-weight: bold;
-  color: #555;
-  border: none;
-  background: none;
-  transition: 0.2s;
+.container {
+  max-width: 1100px;
+  margin: 20px auto;
+  padding: 10px;
 }
 
-.tab.active {
-  border-bottom: 3px solid #007bff;
-  color: #007bff;
+.card {
+  background: white;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
-.tab:hover {
-  color: #0056b3;
-}
-
-/* ===== Formularios ===== */
-form label {
-  display: block;
-  font-size: 14px;
-  margin: 8px 0 4px;
-  font-weight: bold;
-}
-
-form input, form select, form textarea {
-  width: 100%;
+input, select, textarea {
+  margin: 5px;
   padding: 8px;
-  border: 1px solid #bbb;
-  border-radius: 4px;
-  font-size: 14px;
-  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
 }
 
 textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-#cuerpo {
   width: 100%;
-  min-height: 180px;
-  font-size: 14px;
-  font-family: Arial, sans-serif;
 }
 
-/* ===== Botones ===== */
 .btn {
-  display: inline-block;
-  padding: 8px 16px;
-  border-radius: 4px;
-  font-size: 14px;
-  cursor: pointer;
-  margin: 4px 2px;
-  border: none;
-  transition: 0.2s;
-}
-
-.btn.primary {
   background: #007bff;
-  color: #fff;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  margin: 5px;
+  border-radius: 6px;
+  cursor: pointer;
 }
 
-.btn.primary:hover {
+.btn:hover {
   background: #0056b3;
 }
 
 .btn.ghost {
-  background: #f0f0f0;
-  color: #333;
+  background: #e0e0e0;
+  color: black;
 }
 
-.btn.ghost:hover {
-  background: #ddd;
-}
-
-/* ===== Tablas ===== */
-.table {
-  overflow-x: auto;
+.actions {
   margin-top: 10px;
 }
 
-.table table {
-  border-collapse: collapse;
-  width: 100%;
-  background: #fff;
-}
-
-.table th, .table td {
-  padding: 8px 12px;
-  border: 1px solid #ccc;
-  font-size: 14px;
-}
-
-.table th {
-  background: #f0f0f0;
-  font-weight: bold;
-}
-
-/* ===== Chips etiquetas ===== */
-.chip {
-  display: inline-block;
-  padding: 5px 10px;
-  margin: 3px;
-  font-size: 12px;
-  background: #e0e7ff;
-  color: #333;
-  border-radius: 16px;
-  border: 1px solid #cbd5e1;
-  cursor: pointer;
-}
-
-.chip:hover {
-  background: #c7d2fe;
-}
-
-/* ===== Badges subtitulo ===== */
-.badge {
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 13px;
-  color: #fff;
-}
-
-.badge.blue {
-  background: #007bff;
-}
-
-.badge.red {
-  background: #dc3545;
-}
-
-/* ===== Preview ===== */
-#previewHtml {
-  background: #fff;
-  border: 1px solid #ddd;
-  padding: 15px;
-  margin-top: 15px;
-  white-space: pre-wrap;
-  border-radius: 6px;
-}
