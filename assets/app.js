@@ -1,5 +1,5 @@
 (function(){
-  // --------- Helpers a prueba de null ---------
+  // --------- Helpers ---------
   const $ID = (id) => document.getElementById(id);
   const val  = (id) => ($ID(id)?.value ?? "");
   const setv = (id, v) => { if ($ID(id)) $ID(id).value = v; };
@@ -9,7 +9,7 @@
   const $$ = (sel)=> Array.from(document.querySelectorAll(sel));
   const showErr = m => { const b=$ID("errorBox"); if(b){ b.textContent="Error: "+m; b.hidden=false; } };
 
-  // ==== Fecha (solo dd-mm-aaaa) ====
+  // ==== Fecha (dd-mm-aaaa) ====
   function formattedFecha(){
     const d = val("g_fecha_dia");
     if(!d) return "";
@@ -17,7 +17,7 @@
     return `${day}-${m}-${y}`;
   }
 
-  // ===== Claves de storage =====
+  // ===== Storage keys =====
   const CASEKEY="hr_cases_v1";
   const CATKEY ="hr_catalogs_v1";
 
@@ -40,15 +40,14 @@
       dependencias: ["Comisaría Miramar","Comisaría Otamendi","Comisaría de la Mujer Gral. Alvarado","Destacamento Mar del Sud"]
     }
   };
-
   const getCatalogs=()=>{ try{
-      const raw=localStorage.getItem(CATKEY);
-      if(!raw) return structuredClone(DEFAULT_CATALOGS);
-      const parsed=JSON.parse(raw);
-      const cat=structuredClone(DEFAULT_CATALOGS);
-      Object.keys(parsed||{}).forEach(k=>cat[k]=parsed[k]);
-      return cat;
-    }catch{return structuredClone(DEFAULT_CATALOGS);} };
+    const raw=localStorage.getItem(CATKEY);
+    if(!raw) return structuredClone(DEFAULT_CATALOGS);
+    const parsed=JSON.parse(raw);
+    const cat=structuredClone(DEFAULT_CATALOGS);
+    Object.keys(parsed||{}).forEach(k=>cat[k]=parsed[k]);
+    return cat;
+  }catch{return structuredClone(DEFAULT_CATALOGS);} };
   const setCatalogs=(obj)=> localStorage.setItem(CATKEY, JSON.stringify(obj));
 
   // ===== Casos =====
@@ -56,39 +55,50 @@
   const setCases=(a)=> localStorage.setItem(CASEKEY, JSON.stringify(a));
   const freshId=()=> "c_"+Date.now()+"_"+Math.random().toString(36).slice(2,7);
 
-  function renderCases(){
-    const box=$ID("casesList"); if(!box) return;
-    const cases = getCases();
-    if(!cases.length){ box.innerHTML="Sin hechos guardados."; return; }
-    box.innerHTML = `<table><thead><tr><th></th><th></th><th>Nombre</th><th>Fecha</th><th>Tipo</th><th>Número</th><th>Partido</th><th>Dep.</th></tr></thead><tbody>${
-      cases.map(c=>`<tr>
-        <td><input type="checkbox" class="caseCheck" data-id="${c.id}"></td>
-        <td><input type="radio" name="caseSel" data-id="${c.id}"></td>
-        <td>${c.name||''}</td>
-        <td>${c.generales?.fecha_hora||''}</td>
-        <td>${c.generales?.tipoExp||''}</td>
-        <td>${c.generales?.numExp||''}</td>
-        <td>${c.generales?.partido||''}</td>
-        <td>${c.generales?.dependencia||''}</td>
-      </tr>`).join("")
-    }</tbody></table>`;
-    attachCaseSearch();
+  // ===== Texto =====
+  const TitleCase = (s)=> (s||"")
+    .toLowerCase()
+    .split(/(\s|-|\.)/)
+    .map(p=> (p.trim()===""||p==="."||p==="-") ? p : p.charAt(0).toUpperCase()+p.slice(1))
+    .join("");
+
+  function resolvedDependencia(){
+    const v = val("g_dep");
+    if(v==="__manual__") return val("g_dep_manual").trim();
+    return v;
   }
 
-  // ===== Buscador =====
-  function attachCaseSearch() {
-    const input = $ID("caseSearch");
-    const box = $ID("casesList");
-    if (!input || !box) return;
-    input.oninput = () => {
-      const q = input.value.toLowerCase();
-      box.querySelectorAll("tbody tr").forEach(tr=>{
-        tr.style.display = tr.textContent.toLowerCase().includes(q) ? "" : "none";
-      });
-    };
+  function composeTitleFromData(data){
+    const fecha = data.generales?.fecha_hora || formattedFecha();
+    const tipo  = data.generales?.tipoExp || val("g_tipoExp") || "PU";
+    const num   = (data.generales?.numExp ?? val("g_numExp") ?? "").trim();
+    const dep   = data.generales?.dependencia ?? resolvedDependencia();
+    const car   = (data.generales?.caratula ?? val("g_car") ?? "").trim();
+    const sub   = (data.generales?.subtitulo ?? val("g_sub") ?? "").trim();
+
+    let titulo;
+    if(!num){
+      // SIN PU
+      titulo = `${fecha} - (Info DDIC Mar del Plata - Adelanto y ${dep||"Dependencia"}) - ${car}`;
+    }else{
+      // CON PU
+      titulo = `${fecha} - ${tipo} ${num} - ${dep} - ${car}${sub ? " - "+sub : ""}`;
+    }
+    return TitleCase(titulo);
   }
 
-  // ===== Desplegables dependientes =====
+  // ===== Render título (preview) =====
+  function renderTitlePreview(){
+    const data = buildDataFromForm();
+    const titulo = composeTitleFromData(data);
+    const sub    = data.generales?.subtitulo || "";
+    const ok     = !!data.generales?.esclarecido;
+
+    $ID("tituloCompuesto") && ($ID("tituloCompuesto").innerHTML = `<strong>${titulo}</strong>`);
+    $ID("subCompuesto")    && ($ID("subCompuesto").innerHTML    = `<span class="badge ${ok?'blue':'red'}"><strong>${sub}</strong></span>`);
+  }
+
+  // ===== Catálogos dependientes =====
   function fillSelectOptions(select, list, {includeManual=false}={}){
     if(!select) return;
     select.innerHTML = "";
@@ -117,7 +127,7 @@
     renderTitlePreview();
   });
 
-  // ===== Etiquetas =====
+  // ===== Etiquetas sugeridas =====
   const ROLE_KEYS = ["victima","imputado","sindicado","denunciante","testigo","pp","aprehendido","detenido","menor","nn","damnificado institucional"];
   const OBJ_CATS  = ["secuestro","sustraccion","hallazgo","otro"];
 
@@ -153,22 +163,15 @@
     const box = $ID("tagHelper");
     if(!box) return;
     const tags = availableTags();
-    if(!tags.length){
-      box.innerHTML = `<span class="muted">No hay etiquetas disponibles. Cargá personas/objetos para ver sugerencias.</span>`;
-      return;
-    }
-    box.innerHTML = tags.map(t=>`<button type="button" class="chip" data-tag="${t}">${t}</button>`).join("");
+    box.innerHTML = tags.length
+      ? tags.map(t=>`<button type="button" class="chip" data-tag="${t}">${t}</button>`).join("")
+      : `<span class="muted">No hay etiquetas disponibles. Cargá personas/objetos para ver sugerencias.</span>`;
     box.querySelectorAll("[data-tag]").forEach(btn=>{
       btn.onclick = ()=> insertAtCursor($ID("cuerpo"), btn.dataset.tag);
     });
   }
 
-  // ===== Title Case util =====
-  const TitleCase = (s)=> (s||"").toLowerCase().split(/(\s|-)/).map(p=>{
-    if(p.trim()===""||p==='-') return p; return p.charAt(0).toUpperCase()+p.slice(1);
-  }).join("");
-
-  // ===== Civiles (editar) =====
+  // ===== Civiles =====
   const CIV = {
     store:[], editingIndex:null,
     addOrUpdate(){
@@ -214,7 +217,7 @@
     }
   };
 
-  // ===== Fuerzas (editar) =====
+  // ===== Fuerzas =====
   const FZA = {
     store:[], editingIndex:null,
     addOrUpdate(){
@@ -257,7 +260,7 @@
     }
   };
 
-  // ===== Objetos (editar) =====
+  // ===== Objetos =====
   const OBJ = {
     store:[], editingIndex:null,
     addOrUpdate(){
@@ -297,14 +300,13 @@
   // ===== AUTONOMBRE =====
   let __lastAutoName = "";
   function autoCaseNameFromCaratula() {
-    const car = val("g_car").trim();
     const d   = val("g_fecha_dia");
-    let fechaFmt = "";
-    if (d) { const [y,m,day] = d.split("-"); fechaFmt = `${day}-${m}-${y}`; }
+    const fechaFmt = d ? `${d.split("-")[2]}-${d.split("-")[1]}-${d.split("-")[0]}` : "";
     const tipo = val("g_tipoExp") || "PU";
     const num  = val("g_numExp").trim();
     const pu   = num ? `${tipo} ${num}` : "";
-    const partes = [car || "Hecho", fechaFmt, pu ? `(${pu})` : ""].filter(Boolean);
+    const car  = val("g_car").trim() || "Hecho";
+    const partes = [TitleCase(car), fechaFmt, pu ? `(${pu})` : ""].filter(Boolean);
     return partes.join(" – ");
   }
   function refreshAutoCaseName() {
@@ -318,16 +320,10 @@
   }
 
   // ===== Build data =====
-  function resolvedDependencia(){
-    const v = val("g_dep");
-    if(v==="__manual__") return val("g_dep_manual").trim();
-    return v;
-  }
   function buildDataFromForm(){
     const tipo = val("g_tipoExp") || "PU";
     const num  = val("g_numExp").trim();
     const puFull = num ? `${tipo} ${num}` : "";
-
     return {
       generales: {
         fecha_hora: formattedFecha(),
@@ -352,30 +348,89 @@
     };
   }
 
-  // ===== Título compuesto =====
-  function renderTitlePreview(){
-    const tipo = val("g_tipoExp") || "PU";
-    const num  = val("g_numExp").trim();
-    const puFmt = num ? `${tipo} ${num}` : "";
-    const dep  = resolvedDependencia();
-
-    const parts = [ formattedFecha(), puFmt, dep, val("g_car") ].filter(Boolean);
-    const t = parts.join(" – ");
-
-    const sub = val("g_sub"); const ok = (val("g_ok")==="si");
-    $ID("tituloCompuesto") && ($ID("tituloCompuesto").innerHTML = `<strong>${t.toUpperCase()}</strong>`);
-    $ID("subCompuesto")    && ($ID("subCompuesto").innerHTML    = `<span class="badge ${ok?'blue':'red'}"><strong>${sub}</strong></span>`);
-  }
-
   // ===== Preview / acciones =====
   function preview(){
     const data = buildDataFromForm();
     const out = HRFMT.buildAll(data);
+    // Sólo mostramos el body generado por HRFMT; los títulos van por nuestra vista
     $ID("previewHtml") && ($ID("previewHtml").innerHTML = out.html);
     return out;
   }
 
-  // ===== Selecciones en tabla =====
+  // ===== Tabla de casos (Select all + click en fila) =====
+  function renderCases(){
+    const box=$ID("casesList"); if(!box) return;
+    const cases = getCases();
+    if(!cases.length){ box.innerHTML="Sin hechos guardados."; return; }
+
+    box.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th style="width:36px;text-align:center">
+              <input type="checkbox" id="caseCheckAll" title="Seleccionar todos">
+            </th>
+            <th style="width:36px;text-align:center"></th>
+            <th>Nombre</th><th>Fecha</th><th>Tipo</th><th>Número</th><th>Partido</th><th>Dep.</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${
+            cases.map(c=>`
+              <tr data-id="${c.id}">
+                <td style="text-align:center"><input type="checkbox" class="caseCheck" data-id="${c.id}"></td>
+                <td style="text-align:center"><input type="radio" name="caseSel" class="caseSel" data-id="${c.id}"></td>
+                <td>${c.name||''}</td>
+                <td>${c.generales?.fecha_hora||''}</td>
+                <td>${c.generales?.tipoExp||''}</td>
+                <td>${c.generales?.numExp||''}</td>
+                <td>${c.generales?.partido||''}</td>
+                <td>${c.generales?.dependencia||''}</td>
+              </tr>
+            `).join("")
+          }
+        </tbody>
+      </table>`;
+    attachCaseSearch();
+    wireCaseTableInteractions();
+  }
+  function attachCaseSearch() {
+    const input = $ID("caseSearch");
+    const box = $ID("casesList");
+    if (!input || !box) return;
+    input.oninput = () => {
+      const q = input.value.toLowerCase();
+      box.querySelectorAll("tbody tr").forEach(tr=>{
+        tr.style.display = tr.textContent.toLowerCase().includes(q) ? "" : "none";
+      });
+    };
+  }
+  function wireCaseTableInteractions(){
+    const list = $ID("casesList");
+    if(!list) return;
+    const tbody = list.querySelector("tbody");
+    if (tbody && !tbody.__boundRowToggle) {
+      tbody.addEventListener("click", (e)=>{
+        const tr = e.target.closest("tr[data-id]");
+        if(!tr) return;
+        if (e.target.tagName === "INPUT") return;
+        const cb = tr.querySelector(".caseCheck");
+        if (cb) cb.checked = !cb.checked;
+        const rd = tr.querySelector(".caseSel");
+        if (rd) rd.checked = true;
+      });
+      tbody.__boundRowToggle = true;
+    }
+    const checkAll = $ID("caseCheckAll");
+    if (checkAll && !checkAll.__boundAll) {
+      checkAll.addEventListener("change", ()=>{
+        $$(".caseCheck").forEach(cb=> cb.checked = checkAll.checked);
+      });
+      checkAll.__boundAll = true;
+    }
+  }
+
+  // ===== Selección helpers =====
   const selectedRadio = ()=> { const r = document.querySelector('input[name="caseSel"]:checked'); return r ? r.getAttribute("data-id") : null; };
   const selectedChecks = ()=> $$(".caseCheck:checked").map(x=>x.getAttribute("data-id"));
 
@@ -413,17 +468,38 @@
     }catch(e){ console.error(e); alert("No se pudo leer el archivo JSON."); }
   }
 
-  // ===== Init =====
+  // ===== Build salidas consistentes (WA / DOCX) =====
+  function buildOutputs(data){
+    const built = HRFMT.buildAll(data);
+    const titulo = composeTitleFromData(data);
+    const subt   = (data.generales?.subtitulo||"");
+    const color  = data.generales?.esclarecido ? "0000FF" : "FF0000"; // azul/rojo (docx)
+
+    // WhatsApp: *Titulo*\n*Subtitulo*\nCuerpo (del HTML->WA)
+    const bodyWA = HRFMT.htmlToWA(built.forDocx?.bodyHtml || built.html || "", { mergeSoftBreaks: !!window.WA_MERGE_SOFTBREAKS });
+    const waText = `*${titulo}*\n${subt ? `*${subt}*\n` : ""}${bodyWA}`.trim();
+
+    // DOCX: devolvemos runs y texto listo
+    return {
+      built,
+      waText,
+      docx: {
+        titulo,
+      subtitulo: subt,
+      color
+      }
+    };
+  }
+
+  // ===== Init / Bindings =====
   document.addEventListener("DOMContentLoaded", ()=>{
-    // Render inicial
     renderCases();
     loadLocalidadesAndDeps();
     renderTitlePreview();
     renderTagHelper();
-    cat_loadIntoEditor();
     refreshAutoCaseName();
 
-    // --- Eventos de inputs que afectan el título/autonombre ---
+    // Inputs que afectan título/autonombre
     ["g_fecha_dia","g_numExp","g_tipoExp","g_car","g_sub","g_ok","g_ufi","g_coord","g_relevante","g_supervisado","g_dep_manual"].forEach(id=>{
       const n = $ID(id);
       if(!n) return;
@@ -437,60 +513,93 @@
     $ID("g_localidad")?.addEventListener("change", renderTitlePreview);
     $ID("g_dep")?.addEventListener("change", renderTitlePreview);
 
-    // --- BINDs que dependen de elementos del DOM ---
     const bind = (id,fn)=>{ const n=$ID(id); if(n) n.onclick=fn; };
 
-    // Agregar/editar items
+    // Agregar/editar
     bind("addCivil",  ()=> CIV.addOrUpdate());
     bind("addFuerza", ()=> FZA.addOrUpdate());
     bind("addObjeto", ()=> OBJ.addOrUpdate());
 
-    // Generar preview / copiar WA / descargar Word / CSV (este) / limpiar
+    // Preview / Copy WA
     bind("generar",   ()=>{ preview(); });
     document.addEventListener("keydown",(e)=>{ if(e.ctrlKey && e.key==="Enter"){ e.preventDefault(); preview(); } });
-
     bind("copiarWA", ()=>{
       window.WA_MERGE_SOFTBREAKS = !!$ID("wa_merge")?.checked;
-      const out = preview(); 
-      navigator.clipboard.writeText(out.waLong).then(()=>alert("Copiado para WhatsApp"));
+      const data = buildDataFromForm();
+      const out  = buildOutputs(data);
+      navigator.clipboard.writeText(out.waText).then(()=>alert("Copiado para WhatsApp"));
     });
 
+    // DOCX (uno) — usamos nuestra salida consistente
     bind("descargarWord", async ()=>{
-      try{ await HRFMT.downloadDocx(buildDataFromForm(), (window.docx||{})); }
-      catch(e){ console.error(e); showErr(e.message||e); }
+      try{
+        const data = buildDataFromForm();
+        const out  = buildOutputs(data);
+
+        const docx = window.docx||{}; 
+        const { Document, Packer, TextRun, Paragraph, AlignmentType } = docx;
+        if(!Document){ showErr("docx no cargada"); return; }
+
+        const toRuns = (html)=>{
+          const parts=(html||"").split(/(<\/?strong>|<\/?em>|<\/?u>)/g);
+          let B=false,I=false,U=false; const runs=[];
+          for(const part of parts){
+            if(part==="<strong>"){B=true;continue;}
+            if(part==="</strong>"){B=false;continue;}
+            if(part==="<em>"){I=true;continue;}
+            if(part==="</em>"){I=false;continue;}
+            if(part==="<u>"){U=true;continue;}
+            if(part==="</u>"){U=false;continue;}
+            if(part){ runs.push(new TextRun({text:part,bold:B,italics:I,underline:U?{}:undefined})); }
+          }
+          return runs;
+        };
+        const JUST = AlignmentType.JUSTIFIED;
+        const children = [];
+        children.push(new Paragraph({ children:[ new TextRun({ text: out.docx.titulo, bold:true }) ] }));
+        if(out.docx.subtitulo){
+          children.push(new Paragraph({ children:[ new TextRun({ text: out.docx.subtitulo, bold:true, color: out.docx.color }) ] }));
+        }
+        (out.built.forDocx?.bodyHtml||"").split(/\n\n+/).forEach(p=>{
+          children.push(new Paragraph({ children: toRuns(p), alignment: JUST, spacing:{after:200} }));
+        });
+
+        const doc = new Document({
+          styles:{ default:{ document:{ run:{ font:"Arial", size:24 }, paragraph:{ spacing:{ after:120 } } } } },
+          sections:[{ children }]
+        });
+
+        const blob = await Packer.toBlob(doc);
+        const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+        a.download=`Hecho_Relevante_${new Date().toISOString().slice(0,10)}.docx`; a.click();
+      }catch(e){ console.error(e); showErr(e.message||e); }
     });
 
+    // CSV (este)
     bind("exportCSV1", ()=>{ HRFMT.downloadCSV([buildDataFromForm()]); });
 
+    // Limpiar
     bind("clearAll", ()=>{
       if(!confirm("¿Borrar todos los campos del formulario actual? Esto no borra los 'Hechos guardados'.")) return;
-
       setv("g_fecha_dia",""); setv("g_tipoExp","PU"); setv("g_numExp","");
       setv("g_partido",""); loadLocalidadesAndDeps(); setv("g_localidad","");
       setv("g_dep",""); setv("g_dep_manual",""); styleShow("g_dep_manual_wrap",false);
       setv("g_car",""); setv("g_sub",""); setv("g_ok","no"); setv("g_ufi",""); setv("g_coord","");
       setchk("g_relevante",false); setchk("g_supervisado",false);
-
       CIV.store=[]; FZA.store=[]; OBJ.store=[];
       CIV.clearForm(); FZA.clearForm(); OBJ.clearForm();
       CIV.render(); FZA.render(); OBJ.render();
-
       setv("cuerpo","");
-
-      renderTitlePreview();
-      renderTagHelper();
-      refreshAutoCaseName();
+      renderTitlePreview(); renderTagHelper(); refreshAutoCaseName();
     });
 
-    // ===== CRUD de casos =====
+    // ===== CRUD casos =====
     bind("saveCase", ()=>{
       const nameInput = (val("caseName") || "").trim();
       const name = nameInput || autoCaseNameFromCaratula();
-
       const snap = buildDataFromForm(); 
       snap.id = freshId(); 
       snap.name = name;
-
       const cases = getCases(); cases.push(snap); setCases(cases); renderCases(); 
       __lastAutoName = name;
       alert("Guardado.");
@@ -499,14 +608,11 @@
     bind("updateCase", ()=>{
       const id = selectedRadio(); if(!id){ alert("Elegí un hecho (radio) para actualizar."); return; }
       const cases = getCases(); const idx = cases.findIndex(c=>c.id===id); if(idx<0){ alert("No encontrado"); return; }
-
       const nameInput = (val("caseName") || "").trim();
       const name = nameInput || autoCaseNameFromCaratula();
-
       const snap = buildDataFromForm(); 
       snap.id = id; 
       snap.name = name;
-
       cases[idx] = snap; setCases(cases); renderCases(); 
       __lastAutoName = name;
       alert("Actualizado.");
@@ -523,27 +629,26 @@
       loadSnapshot(c); renderCases(); preview(); alert("Cargado.");
     });
 
+    // Export CSV (seleccionados)
     bind("exportCSV", ()=>{
       const ids = selectedChecks(); if(!ids.length){ alert("Seleccioná al menos un hecho (checkbox)."); return; }
       const list = getCases().filter(c=>ids.includes(c.id));
       HRFMT.downloadCSV(list);
     });
 
-    // ===== Avisar Hecho (copia al portapapeles el seleccionado) =====
+    // Avisar hecho (usa WA consistente)
     bind("avisarHecho", ()=>{
       const id = selectedRadio(); 
       if(!id){ alert("Elegí un hecho (radio) para avisar."); return; }
       const c = getCases().find(x=>x.id===id);
       if(!c){ alert("No encontrado"); return; }
-
-      const built = HRFMT.buildAll(c);
-      const texto = built.waLong || built.html || "Hecho importante.";
-      navigator.clipboard.writeText(texto).then(()=>{
-        alert("Hecho copiado al portapapeles. Ahora podés pegarlo en WhatsApp 📲");
+      const out = buildOutputs(c);
+      navigator.clipboard.writeText(out.waText).then(()=>{
+        alert("Hecho copiado al portapapeles. Pegalo en WhatsApp 📲");
       });
     });
 
-    // ===== Descargar Word Multi (checkbox seleccionados) =====
+    // DOCX múltiple (seleccionados)
     bind("downloadWordMulti", async ()=>{
       const ids = selectedChecks(); 
       if(!ids.length){ alert("Seleccioná al menos un hecho (checkbox)."); return; }
@@ -565,16 +670,17 @@
         }
         return runs;
       };
-
       const JUST = AlignmentType.JUSTIFIED;
       const selected = getCases().filter(c=>ids.includes(c.id));
       const children = [];
 
       selected.forEach((snap,i)=>{
-        const built = HRFMT.buildAll(snap);
-        children.push(new Paragraph({ children:[ new TextRun({ text: built.forDocx.titulo, bold:true }) ] }));
-        children.push(new Paragraph({ children:[ new TextRun({ text: built.forDocx.subtitulo, bold:true, color: built.forDocx.color }) ] }));
-        (built.forDocx.bodyHtml||"").split(/\n\n+/).forEach(p=>{
+        const out = buildOutputs(snap);
+        children.push(new Paragraph({ children:[ new TextRun({ text: out.docx.titulo, bold:true }) ] }));
+        if(out.docx.subtitulo){
+          children.push(new Paragraph({ children:[ new TextRun({ text: out.docx.subtitulo, bold:true, color: out.docx.color }) ] }));
+        }
+        (out.built.forDocx?.bodyHtml||"").split(/\n\n+/).forEach(p=>{
           children.push(new Paragraph({ children: toRuns(p), alignment: JUST, spacing:{after:200} }));
         });
         if(i !== selected.length-1) children.push(new Paragraph({ text:"" }));
@@ -592,16 +698,15 @@
       a.click();
     });
 
-    // Backup / Restore / Merge JSON (botones)
-    const rFile=$ID("restoreFile"), mFile=$ID("mergeFile");
+    // Backup / Restore / Merge
     $ID("backupJSON")?.addEventListener("click", ()=> exportBackupJSON());
     $ID("restoreJSON")?.addEventListener("click", ()=>{
-      if(!rFile) return; rFile.value=""; rFile.click();
-      rFile.onchange=()=>{ if(rFile.files?.[0]) importBackupJSON(rFile.files[0], confirm("¿Reemplazar todo lo guardado por el archivo?\nAceptar = Reemplazar • Cancelar = Fusionar")); };
+      const input=$ID("restoreFile"); if(!input) return; input.value=""; input.click();
+      input.onchange=()=>{ if(input.files?.[0]) importBackupJSON(input.files[0], confirm("¿Reemplazar todo lo guardado por el archivo?\nAceptar = Reemplazar • Cancelar = Fusionar")); };
     });
     $ID("mergeJSON")?.addEventListener("click", ()=>{
-      if(!mFile) return; mFile.value=""; mFile.click();
-      mFile.onchange=()=>{ if(mFile.files?.[0]) importBackupJSON(mFile.files[0], false); };
+      const input=$ID("mergeFile"); if(!input) return; input.value=""; input.click();
+      input.onchange=()=>{ if(input.files?.[0]) importBackupJSON(input.files[0], false); };
     });
 
     // Catálogos UI
@@ -621,12 +726,10 @@
     $ID("cat_partidoSel")?.addEventListener("change", cat_loadIntoEditor);
     $ID("cat_guardar")?.addEventListener("click", cat_guardar);
     $ID("cat_reset")?.addEventListener("click", cat_reset);
-
-    // Primera carga del editor de catálogos
     cat_loadIntoEditor();
-  }); // <- FIN DOMContentLoaded
+  });
 
-  // ===== Cargar snapshot (se usa desde loadSelected) =====
+  // ===== Cargar snapshot =====
   function loadSnapshot(s){
     const fh = s.generales?.fecha_hora || "";
     const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(fh);
