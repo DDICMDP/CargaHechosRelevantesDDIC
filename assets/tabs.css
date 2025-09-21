@@ -1,6 +1,6 @@
 .tabs{margin-top:6px}
-.tabs-nav{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
-.tab{background:#0f172a;border:1px solid var(--border);color:var(--ink);padding:8px 12px;border-radius:8px;cursor:pointer}
-.tab.is-active{background:#1f2a46}
+.tabs-nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tab{background:#18233b;border:1px solid var(--border);color:var(--ink);padding:8px 12px;border-radius:10px;cursor:pointer}
+.tab.is-active{background:#233156}
 .tab-panel{display:none}
 .tab-panel.is-active{display:block}
