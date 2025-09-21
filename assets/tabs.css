@@ -1,5 +1,5 @@
 /* Tabs V9 */
-.tabs{ display:flex; gap:8px; align-items:center; }
+.tabs{ display:flex; gap:8px; align-items:center; margin-bottom:10px; }
 .tab{
   background:#0b1222; color:#e5e7eb; border:1px solid #1e293b;
   padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600;
@@ -9,5 +9,5 @@
   border-color:#334155;
 }
 .tab-content{ display:none; }
-.tab-content.active{ display:block;}
+.tab-content.active{ display:block; }
 
