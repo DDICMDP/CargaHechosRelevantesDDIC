@@ -1,4 +1,4 @@
-// ===== app.js (V9) =====
+// ===== app.js (V9 robusto) =====
 (function () {
   // ---------- Helpers ----------
   const $ID = (id) => document.getElementById(id);
@@ -8,27 +8,13 @@
   const chk = (id) => !!$ID(id)?.checked;
   const setchk = (id, v) => { if ($ID(id)) $ID(id).checked = !!v; };
   const styleShow = (id, show) => { if ($ID(id)) $ID(id).style.display = show ? "block" : "none"; };
-
-  // Insertar texto en la posición del cursor
-  function insertAtCursor(textarea, text) {
-    if (!textarea) return;
-    const start = textarea.selectionStart ?? textarea.value.length;
-    const end   = textarea.selectionEnd   ?? textarea.value.length;
-    const before = textarea.value.slice(0, start);
-    const after  = textarea.value.slice(end);
-    const needsSpace = before && !/\s$/.test(before) ? " " : "";
-    const inserted = needsSpace + text + " ";
-    textarea.value = before + inserted + after;
-    const pos = (before + inserted).length;
-    textarea.setSelectionRange(pos, pos);
-    textarea.focus();
-  }
+  const safeJSON = (s, fb) => { try { return JSON.parse(s); } catch { return fb; } };
 
   // ---------- Constantes ----------
   const CASEKEY = "hr_cases_v1";
-  const CATKEY = "hr_catalogs_v1";
+  const CATKEY  = "hr_catalogs_v1";
 
-  // dd-mm-aaaa desde <input type="date">
+  // Fecha dd-mm-aaaa desde <input type="date">
   const fechaFmt = () => {
     const d = val("g_fecha_dia");
     if (!d) return "";
@@ -60,22 +46,26 @@
       dependencias: ["Cria. Miramar","Cria. Otamendi","Cria. de la Mujer Gral. Alvarado","Destac. Mar del Sud"]
     }
   };
+
   const getCatalogs = () => {
-    try {
-      const raw = localStorage.getItem(CATKEY);
-      if (!raw) return structuredClone(DEFAULT_CATALOGS);
-      const parsed = JSON.parse(raw);
-      const out = structuredClone(DEFAULT_CATALOGS);
-      Object.keys(parsed || {}).forEach(k => out[k] = parsed[k]);
-      return out;
-    } catch { return structuredClone(DEFAULT_CATALOGS); }
+    const raw = localStorage.getItem(CATKEY);
+    if (!raw) { localStorage.setItem(CATKEY, JSON.stringify(DEFAULT_CATALOGS)); return structuredClone(DEFAULT_CATALOGS); }
+    const parsed = safeJSON(raw, null);
+    if (!parsed || typeof parsed !== "object") {
+      localStorage.setItem(CATKEY, JSON.stringify(DEFAULT_CATALOGS));
+      return structuredClone(DEFAULT_CATALOGS);
+    }
+    // merge con defaults
+    const out = structuredClone(DEFAULT_CATALOGS);
+    Object.keys(parsed).forEach(k => out[k] = parsed[k]);
+    return out;
   };
   const setCatalogs = (obj) => localStorage.setItem(CATKEY, JSON.stringify(obj));
 
   // ---------- Casos ----------
-  const getCases = () => { try { return JSON.parse(localStorage.getItem(CASEKEY) || "[]"); } catch { return []; } };
+  const getCases = () => safeJSON(localStorage.getItem(CASEKEY) || "[]", []);
   const setCases = (a) => localStorage.setItem(CASEKEY, JSON.stringify(a));
-  const freshId = () => "c_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
+  const freshId = () => "c_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7));
 
   // ---------- Select dependientes ----------
   function fillSelect(sel, list, { includeManual = false } = {}) {
@@ -85,34 +75,37 @@
     (list || []).forEach(v => sel.append(new Option(v, v)));
     if (includeManual) sel.append(new Option("Escribir manualmente…", "__manual__"));
   }
+
   function loadPartidos() {
     const cat = getCatalogs();
     const partidos = Object.keys(cat);
     fillSelect($ID("g_partido"), partidos);
   }
+
   function resolvedDependencia() {
     const v = val("g_dep");
     if (v === "__manual__") return val("g_dep_manual").trim();
     return v;
   }
+
   function loadLocalidadesDeps() {
     const cat = getCatalogs();
     const partido = val("g_partido");
     const locSel = $ID("g_localidad");
     const depSel = $ID("g_dep");
+    if (!locSel || !depSel) return;
+
     if (!partido || !cat[partido]) {
       fillSelect(locSel, []);
       fillSelect(depSel, [], { includeManual: true });
       styleShow("g_dep_manual_wrap", false);
       return;
     }
+
     fillSelect(locSel, cat[partido].localidades || []);
     fillSelect(depSel, cat[partido].dependencias || [], { includeManual: true });
     styleShow("g_dep_manual_wrap", val("g_dep") === "__manual__");
   }
-  $ID("g_partido")?.addEventListener("change", () => { loadLocalidadesDeps(); renderTitlePreview(); });
-  $ID("g_dep")?.addEventListener("change", () => { styleShow("g_dep_manual_wrap", val("g_dep") === "__manual__"); renderTitlePreview(); });
-  $ID("g_localidad")?.addEventListener("change", renderTitlePreview);
 
   // ---------- TitleCase ----------
   const TitleCase = (s) =>
@@ -123,8 +116,7 @@
 
   // ---------- Stores ----------
   const CIV = {
-    store: [],
-    editingIndex: null,
+    store: [], editingIndex: null,
     addOrUpdate() {
       const p = {
         nombre: val("c_nombre"),
@@ -192,8 +184,7 @@
   };
 
   const FZA = {
-    store: [],
-    editingIndex: null,
+    store: [], editingIndex: null,
     addOrUpdate() {
       const p = {
         nombre: val("f_nombre"), apellido: val("f_apellido"), edad: val("f_edad"),
@@ -252,8 +243,7 @@
   };
 
   const OBJ = {
-    store: [],
-    editingIndex: null,
+    store: [], editingIndex: null,
     addOrUpdate() {
       const o = { descripcion: val("o_desc"), vinculo: (val("o_vinc") || "").toLowerCase() };
       if (!o.descripcion.trim()) return;
@@ -296,33 +286,42 @@
     }
   };
 
-  // ---------- Etiquetas disponibles (chips) ----------
-  const ROLE_KEYS = ["victima", "imputado", "sindicado", "denunciante", "testigo", "interviniente", "aprehendido", "detenido"];
-  const OBJ_KEYS  = ["secuestro", "sustraccion", "hallazgo", "otro"];
+  // ---------- Etiquetas disponibles ----------
+  const ROLE_KEYS = ["victima","imputado","sindicado","denunciante","testigo","interviniente","aprehendido","detenido","menor","nn","pp","damnificado institucional"];
+  const OBJ_KEYS  = ["secuestro","sustraccion","hallazgo","otro"];
 
   function renderTagHelper() {
     const box = $ID("tagHelper");
     if (!box) return;
     const chips = [];
-
     const allPeople = (CIV.store || []).concat(FZA.store || []);
     ROLE_KEYS.forEach(role => {
       const arr = allPeople.filter(p => (p.vinculo || "").toLowerCase() === role);
       arr.forEach((_, i) => chips.push(`#${role}:${i}`));
     });
-
     (FZA.store || []).forEach((_, i) => chips.push(`#pf:${i}`));
-
     OBJ_KEYS.forEach(cat => {
       const arr = (OBJ.store || []).filter(o => (o.vinculo || "").toLowerCase() === cat);
       arr.forEach((_, i) => chips.push(`#${cat}:${i}`));
     });
 
     if (!chips.length) { box.innerHTML = `<span class="muted">Cargá personas/objetos para ver etiquetas rápidas…</span>`; return; }
-
     box.innerHTML = chips.map(t => `<button type="button" class="chip" data-tag="${t}">${t}</button>`).join("");
     box.querySelectorAll("[data-tag]").forEach(btn => {
-      btn.onclick = () => insertAtCursor($ID("cuerpo"), btn.dataset.tag);
+      btn.onclick = () => {
+        const ta = $ID("cuerpo");
+        // insertar en la posición del cursor
+        const start = ta.selectionStart ?? ta.value.length;
+        const end   = ta.selectionEnd   ?? ta.value.length;
+        const before = ta.value.slice(0, start);
+        const after  = ta.value.slice(end);
+        const needsSpace = before && !/\s$/.test(before) ? " " : "";
+        const inserted = needsSpace + btn.dataset.tag + " ";
+        ta.value = before + inserted + after;
+        const pos = (before + inserted).length;
+        ta.setSelectionRange(pos, pos);
+        ta.focus();
+      };
     });
   }
 
@@ -331,7 +330,6 @@
     const tipo = val("g_tipoExp") || "PU";
     const num = (val("g_numExp") || "").trim();
     const puFull = num ? `${tipo} ${num}` : "";
-
     return {
       generales: {
         fecha_hora: fechaFmt(),
@@ -357,19 +355,19 @@
   }
 
   // ---------- Preview ----------
+  function preview() {
+    const out = HRFMT.buildAll(buildDataFromForm());
+    const prev = $ID("previewHtml");
+    if (prev) prev.textContent = out.waLong; // igual a WhatsApp
+    return out;
+  }
+
   function renderTitlePreview() {
     const out = HRFMT.buildAll(buildDataFromForm());
     const t = $ID("tituloCompuesto");
     const s = $ID("subCompuesto");
     if (t) t.textContent = out.forDocx.titulo;
     if (s) s.textContent = out.forDocx.subtitulo || "";
-  }
-  function preview() {
-    const out = HRFMT.buildAll(buildDataFromForm());
-    renderTitlePreview();
-    const prev = $ID("previewHtml");
-    if (prev) prev.textContent = out.waLong; // se ve igual que va a WhatsApp (ya sin salto extra)
-    return out;
   }
 
   // ---------- Lista de casos ----------
@@ -394,6 +392,7 @@
     }</tbody></table></div>`;
     attachCaseSearch();
   }
+
   function attachCaseSearch() {
     const input = $ID("caseSearch");
     const box = $ID("casesList");
@@ -405,178 +404,139 @@
       });
     };
   }
+
   const selectedRadio  = () => { const r = document.querySelector('input[name="caseSel"]:checked'); return r ? r.getAttribute("data-id") : null; };
   const selectedChecks = () => $$(".caseCheck:checked").map(x => x.getAttribute("data-id"));
 
-  // ---------- Botones ----------
-  const bind = (id, fn) => { const n = $ID(id); if (n) n.onclick = fn; };
+  // ---------- Bind de botones (tras DOMContentLoaded) ----------
+  function bind(id, fn) { const n = $ID(id); if (n) n.onclick = fn; }
 
-  bind("addCivil",  () => CIV.addOrUpdate());
-  bind("addFuerza", () => FZA.addOrUpdate());
-  bind("addObjeto", () => OBJ.addOrUpdate());
+  function wireButtons() {
+    bind("addCivil",  () => CIV.addOrUpdate());
+    bind("addFuerza", () => FZA.addOrUpdate());
+    bind("addObjeto", () => OBJ.addOrUpdate());
 
-  bind("generar",   () => { preview(); });
+    bind("generar",   () => { preview(); });
 
-  bind("copiarWA", () => {
-    const ids = selectedChecks();
-    if (!ids.length) {
-      const out = preview();
-      navigator.clipboard.writeText(out.waLong).then(() => alert("Copiado al portapapeles"));
-      return;
-    }
-    const joined = getCases()
-      .filter(c => ids.includes(c.id))
-      .map(c => HRFMT.buildAll(c).waLong)
-      .join("\n\n");
-    navigator.clipboard.writeText(joined).then(() => alert("Varios copiados"));
-  });
-
-  bind("descargarWord", async () => {
-    try { await HRFMT.downloadDocx(buildDataFromForm(), (window.docx || {})); }
-    catch (e) { console.error(e); alert("Error generando Word"); }
-  });
-
-  bind("downloadWordMulti", async () => {
-    const ids = selectedChecks();
-    if (!ids.length) { alert("Seleccioná al menos un hecho (checkbox)."); return; }
-    const docx = window.docx || {};
-    const { Document, Packer, TextRun, Paragraph, AlignmentType } = docx;
-    if (!Document) { alert("Librería docx no cargada."); return; }
-
-    const JUST = AlignmentType.JUSTIFIED;
-    const toRuns = (txt) => {
-      const parts = (txt || "").split(/(\*|_)/g);
-      let B = false, I = false;
-      const runs = [];
-      for (const part of parts) {
-        if (part === "*") { B = !B; continue; }
-        if (part === "_") { I = !I; continue; }
-        if (!part) continue;
-        runs.push(new TextRun({ text: part, bold: B, italics: I, underline: I ? {} : undefined }));
+    bind("copiarWA", () => {
+      const ids = selectedChecks();
+      if (!ids.length) {
+        const out = preview();
+        navigator.clipboard.writeText(out.waLong).then(() => alert("Copiado al portapapeles"));
+        return;
       }
-      return runs;
-    };
+      const joined = getCases()
+        .filter(c => ids.includes(c.id))
+        .map(c => HRFMT.buildAll(c).waLong)
+        .join("\n\n");
+      navigator.clipboard.writeText(joined).then(() => alert("Varios copiados"));
+    });
 
-    const selected = getCases().filter(c => ids.includes(c.id));
-    const children = [];
-    selected.forEach((snap, i) => {
+    bind("descargarWord", async () => {
+      try { await HRFMT.downloadDocx(buildDataFromForm(), (window.docx || {})); }
+      catch (e) { console.error(e); alert("Error generando Word"); }
+    });
+
+    bind("downloadWordMulti", async () => {
+      const ids = selectedChecks();
+      if (!ids.length) { alert("Seleccioná al menos un hecho (checkbox)."); return; }
+      const docx = window.docx || {};
+      const { Document, Packer, TextRun, Paragraph, AlignmentType } = docx;
+      if (!Document) { alert("Librería docx no cargada."); return; }
+
+      const JUST = AlignmentType.JUSTIFIED;
+      const toRuns = (txt) => {
+        const parts = (txt || "").split(/(\*|_)/g);
+        let B = false, I = false;
+        const runs = [];
+        for (const part of parts) {
+          if (part === "*") { B = !B; continue; }
+          if (part === "_") { I = !I; continue; }
+          if (!part) continue;
+          runs.push(new TextRun({ text: part, bold: B, italics: I, underline: I ? {} : undefined }));
+        }
+        return runs;
+      };
+
+      const selected = getCases().filter(c => ids.includes(c.id));
+      const children = [];
+      selected.forEach((snap, i) => {
+        const built = HRFMT.buildAll(snap);
+        children.push(new Paragraph({ children: [new TextRun({ text: built.forDocx.titulo, bold: true })] }));
+        if (built.forDocx.subtitulo) {
+          children.push(new Paragraph({ children: [new TextRun({ text: built.forDocx.subtitulo, bold: true, color: built.forDocx.color })] }));
+        }
+        (built.forDocx.bodyHtml || "").split(/\n\n+/).forEach(p => {
+          children.push(new Paragraph({ children: toRuns(p), alignment: JUST, spacing: { after: 200 } }));
+        });
+        if (i !== selected.length - 1) children.push(new Paragraph({ text: "" }));
+      });
+
+      const doc = new Document({
+        styles: { default: { document: { run: { font: "Arial", size: 24 } } } },
+        sections: [{ children }]
+      });
+
+      const blob = await Packer.toBlob(doc);
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `Hechos_Seleccionados_${new Date().toISOString().slice(0, 10)}.docx`;
+      a.click();
+    });
+
+    bind("exportCSV", () => {
+      const ids = selectedChecks();
+      const list = ids.length ? getCases().filter(c => ids.includes(c.id)) : [buildDataFromForm()];
+      HRFMT.downloadCSV(list);
+    });
+    bind("exportCSV1", () => { HRFMT.downloadCSV([buildDataFromForm()]); });
+
+    bind("clearAll", () => {
+      if (!confirm("¿Borrar todos los campos del formulario actual? Esto no borra los 'Hechos guardados'.")) return;
+
+      setv("g_fecha_dia", ""); setv("g_tipoExp", "PU"); setv("g_numExp", "");
+      setv("g_partido", ""); loadLocalidadesDeps(); setv("g_localidad", "");
+      setv("g_dep", ""); setv("g_dep_manual", ""); styleShow("g_dep_manual_wrap", false);
+      setv("g_car", ""); setv("g_sub", ""); setv("g_ok", "no"); setv("g_ufi", ""); setv("g_coord", "");
+      setchk("g_relevante", false); setchk("g_supervisado", false);
+
+      CIV.store = []; FZA.store = []; OBJ.store = [];
+      CIV.clearForm(); FZA.clearForm(); OBJ.clearForm();
+      CIV.render(); FZA.render(); OBJ.render();
+
+      setv("cuerpo", "");
+      renderTitlePreview();
+      renderTagHelper();
+    });
+
+    bind("saveCase", () => {
+      const snap = buildDataFromForm();
       const built = HRFMT.buildAll(snap);
-      children.push(new Paragraph({ children: [new TextRun({ text: built.forDocx.titulo, bold: true })] }));
-      if (built.forDocx.subtitulo) {
-        children.push(new Paragraph({ children: [new TextRun({ text: built.forDocx.subtitulo, bold: true, color: built.forDocx.color })] }));
-      }
-      (built.forDocx.bodyHtml || "").split(/\n\n+/).forEach(p => {
-        children.push(new Paragraph({ children: toRuns(p), alignment: JUST, spacing: { after: 200 } }));
-      });
-      if (i !== selected.length - 1) children.push(new Paragraph({ text: "" }));
+      snap.id = freshId();
+      snap.name = val("caseName").trim() || built.forDocx.titulo;
+      const list = getCases(); list.push(snap); setCases(list); renderCases();
+      alert("Guardado.");
     });
 
-    const doc = new Document({
-      styles: { default: { document: { run: { font: "Arial", size: 24 } } } },
-      sections: [{ children }]
+    bind("updateCase", () => {
+      const id = selectedRadio(); if (!id) { alert("Elegí un hecho (radio) para actualizar."); return; }
+      const list = getCases(); const idx = list.findIndex(c => c.id === id); if (idx < 0) { alert("No encontrado"); return; }
+      const snap = buildDataFromForm(); const built = HRFMT.buildAll(snap);
+      snap.id = id; snap.name = val("caseName").trim() || built.forDocx.titulo;
+      list[idx] = snap; setCases(list); renderCases(); alert("Actualizado.");
     });
 
-    const blob = await Packer.toBlob(doc);
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `Hechos_Seleccionados_${new Date().toISOString().slice(0, 10)}.docx`;
-    a.click();
-  });
+    bind("deleteCase", () => {
+      const id = selectedRadio(); if (!id) { alert("Elegí un hecho (radio) para borrar."); return; }
+      const list = getCases().filter(c => c.id !== id); setCases(list); renderCases();
+    });
 
-  bind("exportCSV", () => {
-    const ids = selectedChecks();
-    const list = ids.length ? getCases().filter(c => ids.includes(c.id)) : [buildDataFromForm()];
-    HRFMT.downloadCSV(list);
-  });
-  bind("exportCSV1", () => { HRFMT.downloadCSV([buildDataFromForm()]); });
-
-  bind("clearAll", () => {
-    if (!confirm("¿Borrar todos los campos del formulario actual? Esto no borra los 'Hechos guardados'.")) return;
-
-    setv("g_fecha_dia", ""); setv("g_tipoExp", "PU"); setv("g_numExp", "");
-    setv("g_partido", ""); loadLocalidadesDeps(); setv("g_localidad", "");
-    setv("g_dep", ""); setv("g_dep_manual", ""); styleShow("g_dep_manual_wrap", false);
-    setv("g_car", ""); setv("g_sub", ""); setv("g_ok", "no"); setv("g_ufi", ""); setv("g_coord", "");
-    setchk("g_relevante", false); setchk("g_supervisado", false);
-
-    CIV.store = []; FZA.store = []; OBJ.store = [];
-    CIV.clearForm(); FZA.clearForm(); OBJ.clearForm();
-    CIV.render(); FZA.render(); OBJ.render();
-
-    setv("cuerpo", "");
-    renderTitlePreview();
-    renderTagHelper();
-  });
-
-  // Guardar/Actualizar/Borrar/Cargar
-  const selectedRadio  = () => { const r = document.querySelector('input[name="caseSel"]:checked'); return r ? r.getAttribute("data-id") : null; };
-
-  bind("saveCase", () => {
-    const snap = buildDataFromForm();
-    const built = HRFMT.buildAll(snap);
-    snap.id = freshId();
-    snap.name = val("caseName").trim() || built.forDocx.titulo;
-    const list = getCases(); list.push(snap); setCases(list); renderCases();
-    alert("Guardado.");
-  });
-
-  bind("updateCase", () => {
-    const id = selectedRadio(); if (!id) { alert("Elegí un hecho (radio) para actualizar."); return; }
-    const list = getCases(); const idx = list.findIndex(c => c.id === id); if (idx < 0) { alert("No encontrado"); return; }
-    const snap = buildDataFromForm(); const built = HRFMT.buildAll(snap);
-    snap.id = id; snap.name = val("caseName").trim() || built.forDocx.titulo;
-    list[idx] = snap; setCases(list); renderCases(); alert("Actualizado.");
-  });
-
-  bind("deleteCase", () => {
-    const id = selectedRadio(); if (!id) { alert("Elegí un hecho (radio) para borrar."); return; }
-    const list = getCases().filter(c => c.id !== id); setCases(list); renderCases();
-  });
-
-  bind("loadSelected", () => {
-    const id = selectedRadio(); if (!id) { alert("Elegí un hecho (radio) para cargar."); return; }
-    const s = getCases().find(c => c.id === id); if (!s) { alert("No encontrado"); return; }
-    loadSnapshot(s); renderCases(); preview(); alert("Cargado.");
-  });
-
-  // Backup / Restore / Merge
-  function exportBackupJSON() {
-    const payload = { version: 1, exported_at: new Date().toISOString(), cases: getCases() };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `hechos_backup_${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
+    bind("loadSelected", () => {
+      const id = selectedRadio(); if (!id) { alert("Elegí un hecho (radio) para cargar."); return; }
+      const s = getCases().find(c => c.id === id); if (!s) { alert("No encontrado"); return; }
+      loadSnapshot(s); renderCases(); preview(); alert("Cargado.");
+    });
   }
-  async function importBackupJSON(file, replace = false) {
-    try {
-      const text = await file.text();
-      const data = JSON.parse(text);
-      const incoming = Array.isArray(data?.cases) ? data.cases : (Array.isArray(data) ? data : null);
-      if (!incoming) { alert("No encontré 'cases' en el JSON."); return; }
-      if (replace) {
-        setCases(incoming); renderCases(); alert(`Restauración completa: ${incoming.length} hechos.`); return;
-      }
-      const current = getCases();
-      const ids = new Set(current.map(c => c.id));
-      let added = 0, skipped = 0;
-      incoming.forEach(it => {
-        if (!it || typeof it !== "object") { skipped++; return; }
-        if (!it.id) it.id = freshId();
-        if (!it.name) it.name = "Hecho importado";
-        if (ids.has(it.id)) skipped++; else { current.push(it); ids.add(it.id); added++; }
-      });
-      setCases(current); renderCases();
-      alert(`Fusión completa: agregados ${added}, saltados ${skipped}.`);
-    } catch (e) { console.error(e); alert("No se pudo leer el archivo JSON."); }
-  }
-  bind("backupJSON",  () => exportBackupJSON());
-  bind("restoreJSON", () => { const input = $ID("restoreFile"); if (!input) return; input.value = ""; input.click();
-    input.onchange = () => { if (input.files?.[0]) importBackupJSON(input.files[0], confirm("¿Reemplazar todo lo guardado por el archivo?\nAceptar = Reemplazar • Cancelar = Fusionar")); };
-  });
-  bind("mergeJSON",   () => { const input = $ID("mergeFile"); if (!input) return; input.value = ""; input.click();
-    input.onchange = () => { if (input.files?.[0]) importBackupJSON(input.files[0], false); };
-  });
 
   // ---------- Snapshot -> formulario ----------
   function loadSnapshot(s) {
@@ -585,12 +545,14 @@
     if (m) setv("g_fecha_dia", `${m[3]}-${m[2]}-${m[1]}`); else setv("g_fecha_dia", "");
 
     setv("g_tipoExp", s.generales?.tipoExp || "PU");
-    setv("g_numExp", s.generales?.numExp || "");
+    setv("g_numExp",  s.generales?.numExp || "");
 
-    setv("g_partido", s.generales?.partido || ""); loadLocalidadesDeps();
+    // Cargas dependientes
+    const cat = getCatalogs(); // asegura que exista
+    setv("g_partido", s.generales?.partido || "");
+    loadLocalidadesDeps();
     setv("g_localidad", s.generales?.localidad || "");
 
-    const cat = getCatalogs();
     const partido = val("g_partido");
     const deps = (cat[partido]?.dependencias || []);
     if (s.generales?.dependencia && !deps.includes(s.generales.dependencia)) {
@@ -599,10 +561,13 @@
       setv("g_dep", s.generales?.dependencia || ""); setv("g_dep_manual", ""); styleShow("g_dep_manual_wrap", val("g_dep") === "__manual__");
     }
 
-    setv("g_car", s.generales?.caratula || ""); setv("g_sub", s.generales?.subtitulo || "");
-    setv("g_ok", s.generales?.esclarecido ? "si" : "no");
-    setv("g_ufi", s.generales?.ufi || ""); setv("g_coord", s.generales?.coordenadas || "");
-    setchk("g_relevante", !!s.generales?.relevante); setchk("g_supervisado", !!s.generales?.supervisado);
+    setv("g_car", s.generales?.caratula || "");
+    setv("g_sub", s.generales?.subtitulo || "");
+    setv("g_ok",  s.generales?.esclarecido ? "si" : "no");
+    setv("g_ufi", s.generales?.ufi || "");
+    setv("g_coord", s.generales?.coordenadas || "");
+    setchk("g_relevante", !!s.generales?.relevante);
+    setchk("g_supervisado", !!s.generales?.supervisado);
 
     CIV.store = (s.civiles || []).slice(); FZA.store = (s.fuerzas || []).slice(); OBJ.store = (s.objetos || []).slice();
     CIV.render(); FZA.render(); OBJ.render();
@@ -613,23 +578,32 @@
   }
 
   // ---------- Eventos de refresco ----------
-  ["g_fecha_dia","g_tipoExp","g_numExp","g_partido","g_localidad","g_dep","g_dep_manual","g_car","g_sub","g_ok","g_ufi","g_coord","g_relevante","g_supervisado"]
-    .forEach(id => {
-      const n = $ID(id); if (!n) return;
-      const ev = (n.tagName === "SELECT" || n.type === "checkbox" || n.type === "date") ? "change" : "input";
-      n.addEventListener(ev, renderTitlePreview);
-    });
+  function wireLivePreview() {
+    ["g_fecha_dia","g_tipoExp","g_numExp","g_partido","g_localidad","g_dep","g_dep_manual","g_car","g_sub","g_ok","g_ufi","g_coord","g_relevante","g_supervisado"]
+      .forEach(id => {
+        const n = $ID(id); if (!n) return;
+        const ev = (n.tagName === "SELECT" || n.type === "checkbox" || n.type === "date") ? "change" : "input";
+        n.addEventListener(ev, renderTitlePreview);
+      });
+  }
 
   // ---------- Init ----------
   document.addEventListener("DOMContentLoaded", () => {
+    // autocuración de catálogos si hace falta
+    getCatalogs(); // crea defaults si no existen
+    // cargar selects
     loadPartidos();
     loadLocalidadesDeps();
+    // render inicial de tablas
     CIV.render(); FZA.render(); OBJ.render();
+    // wire botones y preview
+    wireButtons();
+    wireLivePreview();
     renderTitlePreview();
     renderTagHelper();
     renderCases();
   });
 
-  // Debug global
+  // Debug global (opcional)
   window.__DEBUG = { CIV, FZA, OBJ };
 })();
