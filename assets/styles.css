@@ -1,74 +1,163 @@
+/* ===== Reset ===== */
 body {
-  font-family: Arial, sans-serif;
-  background: #f7f9fc;
   margin: 0;
-  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f5f7fa;
+  color: #222;
 }
 
-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 30px;
-  background: #2b3a67;
-  color: white;
-}
-
-header .logo {
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
+h1, h2, h3 {
+  font-weight: 600;
+  margin: 1rem 0 0.5rem;
 }
 
 h1 {
-  margin: 0;
+  font-size: 1.8rem;
+  color: #111;
 }
 
-.container {
-  max-width: 1100px;
-  margin: 20px auto;
-  padding: 10px;
+h2 {
+  font-size: 1.3rem;
+  border-bottom: 2px solid #ddd;
+  padding-bottom: 4px;
 }
 
-.card {
-  background: white;
+h3 {
+  font-size: 1.1rem;
+  margin-top: 1rem;
+}
+
+/* ===== Header ===== */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  padding: 10px 20px;
+  border-bottom: 1px solid #ddd;
+}
+
+header .logo {
+  height: 60px;
+  width: auto;
+}
+
+/* ===== Layout ===== */
+main {
   padding: 20px;
-  margin-bottom: 20px;
-  border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  max-width: 1200px;
+  margin: auto;
+}
+
+label {
+  display: inline-block;
+  margin: 6px;
+  font-size: 0.9rem;
 }
 
 input, select, textarea {
-  margin: 5px;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 0.9rem;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  margin-left: 4px;
 }
 
 textarea {
   width: 100%;
+  resize: vertical;
 }
 
+/* ===== Botones ===== */
 .btn {
-  background: #007bff;
-  color: white;
+  background: #2d89ef;
+  color: #fff;
   border: none;
-  padding: 8px 14px;
-  margin: 5px;
   border-radius: 6px;
+  padding: 8px 14px;
+  margin: 5px 4px;
   cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
 }
 
 .btn:hover {
-  background: #0056b3;
+  background: #1b5fbd;
 }
 
 .btn.ghost {
-  background: #e0e0e0;
-  color: black;
+  background: #eee;
+  color: #333;
 }
 
-.actions {
+.btn.ghost:hover {
+  background: #ddd;
+}
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
   margin-top: 10px;
+}
+
+/* ===== Tablas ===== */
+.table {
+  margin-top: 10px;
+  overflow-x: auto;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9rem;
+  background: #fff;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 6px 10px;
+  text-align: left;
+}
+
+th {
+  background: #f0f0f0;
+}
+
+/* ===== Vista previa ===== */
+.preview {
+  background: #fff;
+  border: 1px solid #ccc;
+  padding: 12px;
+  min-height: 80px;
+  white-space: pre-wrap;
+  font-family: "Segoe UI", sans-serif;
+  line-height: 1.5;
+}
+
+/* ===== Chips etiquetas ===== */
+#tagHelper {
+  margin-top: 10px;
+}
+
+.chip {
+  background: #eee;
+  border-radius: 16px;
+  padding: 4px 10px;
+  margin: 3px;
+  border: none;
+  cursor: pointer;
+}
+
+.chip:hover {
+  background: #ddd;
+}
+
+/* ===== Buscador ===== */
+#caseSearch {
+  padding: 6px 8px;
+  margin-bottom: 10px;
+  border: 1px solid #aaa;
+  border-radius: 4px;
+  width: 300px;
 }
 
