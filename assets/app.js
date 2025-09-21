@@ -17,10 +17,11 @@
     return `${day}-${m}-${y}`;
   }
 
-  // ===== Catálogos =====
+  // ===== Claves de storage =====
   const CASEKEY="hr_cases_v1";
   const CATKEY ="hr_catalogs_v1";
 
+  // ===== Catálogos por defecto =====
   const DEFAULT_CATALOGS = {
     "General Pueyrredon": {
       localidades: ["Mar del Plata","Batán","Sierra de los Padres","Chapadmalal","Estación Camet","El Boquerón"],
@@ -39,7 +40,15 @@
       dependencias: ["Comisaría Miramar","Comisaría Otamendi","Comisaría de la Mujer Gral. Alvarado","Destacamento Mar del Sud"]
     }
   };
-  const getCatalogs=()=>{ try{const raw=localStorage.getItem(CATKEY); if(!raw) return structuredClone(DEFAULT_CATALOGS); const parsed=JSON.parse(raw); const cat=structuredClone(DEFAULT_CATALOGS); Object.keys(parsed||{}).forEach(k=>cat[k]=parsed[k]); return cat;}catch{return structuredClone(DEFAULT_CATALOGS);} };
+
+  const getCatalogs=()=>{ try{
+      const raw=localStorage.getItem(CATKEY);
+      if(!raw) return structuredClone(DEFAULT_CATALOGS);
+      const parsed=JSON.parse(raw);
+      const cat=structuredClone(DEFAULT_CATALOGS);
+      Object.keys(parsed||{}).forEach(k=>cat[k]=parsed[k]);
+      return cat;
+    }catch{return structuredClone(DEFAULT_CATALOGS);} };
   const setCatalogs=(obj)=> localStorage.setItem(CATKEY, JSON.stringify(obj));
 
   // ===== Casos =====
@@ -154,11 +163,12 @@
     });
   }
 
-  // ===== Civiles (editar) =====
+  // ===== Title Case util =====
   const TitleCase = (s)=> (s||"").toLowerCase().split(/(\s|-)/).map(p=>{
     if(p.trim()===""||p==='-') return p; return p.charAt(0).toUpperCase()+p.slice(1);
   }).join("");
 
+  // ===== Civiles (editar) =====
   const CIV = {
     store:[], editingIndex:null,
     addOrUpdate(){
@@ -365,156 +375,258 @@
     return out;
   }
 
-  // ===== Eventos =====
-  ["g_fecha_dia","g_numExp","g_tipoExp","g_car","g_sub","g_ok","g_ufi","g_coord","g_relevante","g_supervisado","g_dep_manual"].forEach(id=>{
-    const n = $ID(id);
-    if(!n) return;
-    n.addEventListener("input", ()=>{ 
-      renderTitlePreview(); 
-      if (id==="g_car" || id==="g_fecha_dia" || id==="g_tipoExp" || id==="g_numExp") refreshAutoCaseName();
-    });
-    if(n.type==="checkbox") n.addEventListener("change", renderTitlePreview);
-  });
-  $ID("g_partido")?.addEventListener("change", ()=>{ loadLocalidadesAndDeps(); renderTitlePreview(); });
-  $ID("g_localidad")?.addEventListener("change", renderTitlePreview);
-  $ID("g_dep")?.addEventListener("change", renderTitlePreview);
-
-  const bind = (id,fn)=>{ const n=$ID(id); if(n) n.onclick=fn; };
-
-  bind("addCivil",  ()=> CIV.addOrUpdate());
-  bind("addFuerza", ()=> FZA.addOrUpdate());
-  bind("addObjeto", ()=> OBJ.addOrUpdate());
-
-  bind("generar",   ()=>{ preview(); });
-  document.addEventListener("keydown",(e)=>{ if(e.ctrlKey && e.key==="Enter"){ e.preventDefault(); preview(); } });
-
-  bind("copiarWA", ()=>{
-  // leer el toggle antes de construir el texto
-  window.WA_MERGE_SOFTBREAKS = !!$ID("wa_merge")?.checked;
-  const out = preview(); 
-  navigator.clipboard.writeText(out.waLong).then(()=>alert("Copiado para WhatsApp"));
-});
-
-  bind("descargarWord", async ()=>{
-    try{ await HRFMT.downloadDocx(buildDataFromForm(), (window.docx||{})); }
-    catch(e){ console.error(e); showErr(e.message||e); }
-  });
-
-  bind("exportCSV1", ()=>{ HRFMT.downloadCSV([buildDataFromForm()]); });
-
-  bind("clearAll", ()=>{
-    if(!confirm("¿Borrar todos los campos del formulario actual? Esto no borra los 'Hechos guardados'.")) return;
-
-    setv("g_fecha_dia",""); setv("g_tipoExp","PU"); setv("g_numExp","");
-    setv("g_partido",""); loadLocalidadesAndDeps(); setv("g_localidad","");
-    setv("g_dep",""); setv("g_dep_manual",""); styleShow("g_dep_manual_wrap",false);
-    setv("g_car",""); setv("g_sub",""); setv("g_ok","no"); setv("g_ufi",""); setv("g_coord","");
-    setchk("g_relevante",false); setchk("g_supervisado",false);
-
-    CIV.store=[]; FZA.store=[]; OBJ.store=[];
-    CIV.clearForm(); FZA.clearForm(); OBJ.clearForm();
-    CIV.render(); FZA.render(); OBJ.render();
-
-    setv("cuerpo","");
-
-    renderTitlePreview();
-    renderTagHelper();
-    refreshAutoCaseName();
-  });
-
-  // ===== CRUD de casos =====
+  // ===== Selecciones en tabla =====
   const selectedRadio = ()=> { const r = document.querySelector('input[name="caseSel"]:checked'); return r ? r.getAttribute("data-id") : null; };
   const selectedChecks = ()=> $$(".caseCheck:checked").map(x=>x.getAttribute("data-id"));
 
-  bind("saveCase", ()=>{
-    const nameInput = (val("caseName") || "").trim();
-    const name = nameInput || autoCaseNameFromCaratula();
+  // ===== Backup / Restore / Merge JSON =====
+  function exportBackupJSON() {
+    const cases = getCases();
+    const payload = { version: 1, exported_at: new Date().toISOString(), cases };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `hechos_backup_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+  }
+  async function importBackupJSON(file, replace=false) {
+    try{
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const incoming = Array.isArray(data?.cases) ? data.cases : (Array.isArray(data) ? data : null);
+      if(!incoming){ alert("No encontré 'cases' en el JSON."); return; }
 
-    const snap = buildDataFromForm(); 
-    snap.id = freshId(); 
-    snap.name = name;
-
-    const cases = getCases(); cases.push(snap); setCases(cases); renderCases(); 
-    __lastAutoName = name;
-    alert("Guardado.");
-  });
-
-  bind("updateCase", ()=>{
-    const id = selectedRadio(); if(!id){ alert("Elegí un hecho (radio) para actualizar."); return; }
-    const cases = getCases(); const idx = cases.findIndex(c=>c.id===id); if(idx<0){ alert("No encontrado"); return; }
-
-    const nameInput = (val("caseName") || "").trim();
-    const name = nameInput || autoCaseNameFromCaratula();
-
-    const snap = buildDataFromForm(); 
-    snap.id = id; 
-    snap.name = name;
-
-    cases[idx] = snap; setCases(cases); renderCases(); 
-    __lastAutoName = name;
-    alert("Actualizado.");
-  });
-
-  bind("deleteCase", ()=>{
-    const id = selectedRadio(); if(!id){ alert("Elegí un hecho (radio) para borrar."); return; }
-    const cases = getCases().filter(c=>c.id!==id); setCases(cases); renderCases();
-  });
-
-  bind("loadSelected", ()=>{
-    const id = selectedRadio(); if(!id){ alert("Elegí un hecho (radio) para cargar."); return; }
-    const c = getCases().find(x=>x.id===id); if(!c){ alert("No encontrado"); return; }
-    loadSnapshot(c); renderCases(); preview(); alert("Cargado.");
-  });
-
-  bind("exportCSV", ()=>{
-    const ids = selectedChecks(); if(!ids.length){ alert("Seleccioná al menos un hecho (checkbox)."); return; }
-    const list = getCases().filter(c=>ids.includes(c.id));
-    HRFMT.downloadCSV(list);
-  });
-
-  bind("downloadWordMulti", async ()=>{
-    const ids = selectedChecks(); if(!ids.length){ alert("Seleccioná al menos un hecho (checkbox)."); return; }
-    const docx = window.docx||{}; const { Document, Packer, TextRun, Paragraph, AlignmentType } = docx;
-    if(!Document){ showErr("docx no cargada"); return; }
-
-    const toRuns = (html)=>{
-      const parts=(html||"").split(/(<\/?strong>|<\/?em>|<\/?u>)/g);
-      let B=false,I=false,U=false; const runs=[];
-      for(const part of parts){
-        if(part==="<strong>"){B=true;continue;}
-        if(part==="</strong>"){B=false;continue;}
-        if(part==="<em>"){I=true;continue;}
-        if(part==="</em>"){I=false;continue;}
-        if(part==="<u>"){U=true;continue;}
-        if(part==="</u>"){U=false;continue;}
-        if(part){ runs.push(new TextRun({text:part,bold:B,italics:I,underline:U?{}:undefined})); }
+      if(replace){
+        setCases(incoming); renderCases(); alert(`Restauración completa: ${incoming.length} hechos.`); return;
       }
-      return runs;
-    };
-
-    const JUST = AlignmentType.JUSTIFIED;
-    const selected = getCases().filter(c=>ids.includes(c.id));
-    const children = [];
-    selected.forEach((snap,i)=>{
-      const built = HRFMT.buildAll(snap);
-      children.push(new Paragraph({ children:[ new TextRun({ text: built.forDocx.titulo, bold:true }) ] }));
-      children.push(new Paragraph({ children:[ new TextRun({ text: built.forDocx.subtitulo, bold:true, color: built.forDocx.color }) ] }));
-      (built.forDocx.bodyHtml||"").split(/\n\n+/).forEach(p=>{
-        children.push(new Paragraph({ children: toRuns(p), alignment: JUST, spacing:{after:200} }));
+      const current = getCases();
+      const ids = new Set(current.map(c=>c.id));
+      let added=0, skipped=0;
+      incoming.forEach(it=>{
+        if(!it || typeof it!=="object"){ skipped++; return; }
+        if(!it.id) it.id=freshId();
+        if(!it.name) it.name="Hecho importado";
+        if(ids.has(it.id)) skipped++; else { current.push(it); ids.add(it.id); added++; }
       });
-      if(i !== selected.length-1) children.push(new Paragraph({ text:"" }));
+      setCases(current); renderCases();
+      alert(`Fusión completa: agregados ${added}, saltados ${skipped}.`);
+    }catch(e){ console.error(e); alert("No se pudo leer el archivo JSON."); }
+  }
+
+  // ===== Init =====
+  document.addEventListener("DOMContentLoaded", ()=>{
+    // Render inicial
+    renderCases();
+    loadLocalidadesAndDeps();
+    renderTitlePreview();
+    renderTagHelper();
+    cat_loadIntoEditor();
+    refreshAutoCaseName();
+
+    // --- Eventos de inputs que afectan el título/autonombre ---
+    ["g_fecha_dia","g_numExp","g_tipoExp","g_car","g_sub","g_ok","g_ufi","g_coord","g_relevante","g_supervisado","g_dep_manual"].forEach(id=>{
+      const n = $ID(id);
+      if(!n) return;
+      n.addEventListener("input", ()=>{ 
+        renderTitlePreview(); 
+        if (id==="g_car" || id==="g_fecha_dia" || id==="g_tipoExp" || id==="g_numExp") refreshAutoCaseName();
+      });
+      if(n.type==="checkbox") n.addEventListener("change", renderTitlePreview);
+    });
+    $ID("g_partido")?.addEventListener("change", ()=>{ loadLocalidadesAndDeps(); renderTitlePreview(); });
+    $ID("g_localidad")?.addEventListener("change", renderTitlePreview);
+    $ID("g_dep")?.addEventListener("change", renderTitlePreview);
+
+    // --- BINDs que dependen de elementos del DOM ---
+    const bind = (id,fn)=>{ const n=$ID(id); if(n) n.onclick=fn; };
+
+    // Agregar/editar items
+    bind("addCivil",  ()=> CIV.addOrUpdate());
+    bind("addFuerza", ()=> FZA.addOrUpdate());
+    bind("addObjeto", ()=> OBJ.addOrUpdate());
+
+    // Generar preview / copiar WA / descargar Word / CSV (este) / limpiar
+    bind("generar",   ()=>{ preview(); });
+    document.addEventListener("keydown",(e)=>{ if(e.ctrlKey && e.key==="Enter"){ e.preventDefault(); preview(); } });
+
+    bind("copiarWA", ()=>{
+      window.WA_MERGE_SOFTBREAKS = !!$ID("wa_merge")?.checked;
+      const out = preview(); 
+      navigator.clipboard.writeText(out.waLong).then(()=>alert("Copiado para WhatsApp"));
     });
 
-    const doc = new Document({
-      styles:{ default:{ document:{ run:{ font:"Arial", size:24 }, paragraph:{ spacing:{ after:120 } } } } },
-      sections:[{ children }]
+    bind("descargarWord", async ()=>{
+      try{ await HRFMT.downloadDocx(buildDataFromForm(), (window.docx||{})); }
+      catch(e){ console.error(e); showErr(e.message||e); }
     });
 
-    const blob = await Packer.toBlob(doc);
-    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-    a.download=`Hechos_Relevantes_${new Date().toISOString().slice(0,10)}.docx`; a.click();
-  });
+    bind("exportCSV1", ()=>{ HRFMT.downloadCSV([buildDataFromForm()]); });
 
+    bind("clearAll", ()=>{
+      if(!confirm("¿Borrar todos los campos del formulario actual? Esto no borra los 'Hechos guardados'.")) return;
+
+      setv("g_fecha_dia",""); setv("g_tipoExp","PU"); setv("g_numExp","");
+      setv("g_partido",""); loadLocalidadesAndDeps(); setv("g_localidad","");
+      setv("g_dep",""); setv("g_dep_manual",""); styleShow("g_dep_manual_wrap",false);
+      setv("g_car",""); setv("g_sub",""); setv("g_ok","no"); setv("g_ufi",""); setv("g_coord","");
+      setchk("g_relevante",false); setchk("g_supervisado",false);
+
+      CIV.store=[]; FZA.store=[]; OBJ.store=[];
+      CIV.clearForm(); FZA.clearForm(); OBJ.clearForm();
+      CIV.render(); FZA.render(); OBJ.render();
+
+      setv("cuerpo","");
+
+      renderTitlePreview();
+      renderTagHelper();
+      refreshAutoCaseName();
+    });
+
+    // ===== CRUD de casos =====
+    bind("saveCase", ()=>{
+      const nameInput = (val("caseName") || "").trim();
+      const name = nameInput || autoCaseNameFromCaratula();
+
+      const snap = buildDataFromForm(); 
+      snap.id = freshId(); 
+      snap.name = name;
+
+      const cases = getCases(); cases.push(snap); setCases(cases); renderCases(); 
+      __lastAutoName = name;
+      alert("Guardado.");
+    });
+
+    bind("updateCase", ()=>{
+      const id = selectedRadio(); if(!id){ alert("Elegí un hecho (radio) para actualizar."); return; }
+      const cases = getCases(); const idx = cases.findIndex(c=>c.id===id); if(idx<0){ alert("No encontrado"); return; }
+
+      const nameInput = (val("caseName") || "").trim();
+      const name = nameInput || autoCaseNameFromCaratula();
+
+      const snap = buildDataFromForm(); 
+      snap.id = id; 
+      snap.name = name;
+
+      cases[idx] = snap; setCases(cases); renderCases(); 
+      __lastAutoName = name;
+      alert("Actualizado.");
+    });
+
+    bind("deleteCase", ()=>{
+      const id = selectedRadio(); if(!id){ alert("Elegí un hecho (radio) para borrar."); return; }
+      const cases = getCases().filter(c=>c.id!==id); setCases(cases); renderCases();
+    });
+
+    bind("loadSelected", ()=>{
+      const id = selectedRadio(); if(!id){ alert("Elegí un hecho (radio) para cargar."); return; }
+      const c = getCases().find(x=>x.id===id); if(!c){ alert("No encontrado"); return; }
+      loadSnapshot(c); renderCases(); preview(); alert("Cargado.");
+    });
+
+    bind("exportCSV", ()=>{
+      const ids = selectedChecks(); if(!ids.length){ alert("Seleccioná al menos un hecho (checkbox)."); return; }
+      const list = getCases().filter(c=>ids.includes(c.id));
+      HRFMT.downloadCSV(list);
+    });
+
+    // ===== Avisar Hecho (copia al portapapeles el seleccionado) =====
+    bind("avisarHecho", ()=>{
+      const id = selectedRadio(); 
+      if(!id){ alert("Elegí un hecho (radio) para avisar."); return; }
+      const c = getCases().find(x=>x.id===id);
+      if(!c){ alert("No encontrado"); return; }
+
+      const built = HRFMT.buildAll(c);
+      const texto = built.waLong || built.html || "Hecho importante.";
+      navigator.clipboard.writeText(texto).then(()=>{
+        alert("Hecho copiado al portapapeles. Ahora podés pegarlo en WhatsApp 📲");
+      });
+    });
+
+    // ===== Descargar Word Multi (checkbox seleccionados) =====
+    bind("downloadWordMulti", async ()=>{
+      const ids = selectedChecks(); 
+      if(!ids.length){ alert("Seleccioná al menos un hecho (checkbox)."); return; }
+      const docx = window.docx||{}; 
+      const { Document, Packer, TextRun, Paragraph, AlignmentType } = docx;
+      if(!Document){ showErr("docx no cargada"); return; }
+
+      const toRuns = (html)=>{
+        const parts=(html||"").split(/(<\/?strong>|<\/?em>|<\/?u>)/g);
+        let B=false,I=false,U=false; const runs=[];
+        for(const part of parts){
+          if(part==="<strong>"){B=true;continue;}
+          if(part==="</strong>"){B=false;continue;}
+          if(part==="<em>"){I=true;continue;}
+          if(part==="</em>"){I=false;continue;}
+          if(part==="<u>"){U=true;continue;}
+          if(part==="</u>"){U=false;continue;}
+          if(part){ runs.push(new TextRun({text:part,bold:B,italics:I,underline:U?{}:undefined})); }
+        }
+        return runs;
+      };
+
+      const JUST = AlignmentType.JUSTIFIED;
+      const selected = getCases().filter(c=>ids.includes(c.id));
+      const children = [];
+
+      selected.forEach((snap,i)=>{
+        const built = HRFMT.buildAll(snap);
+        children.push(new Paragraph({ children:[ new TextRun({ text: built.forDocx.titulo, bold:true }) ] }));
+        children.push(new Paragraph({ children:[ new TextRun({ text: built.forDocx.subtitulo, bold:true, color: built.forDocx.color }) ] }));
+        (built.forDocx.bodyHtml||"").split(/\n\n+/).forEach(p=>{
+          children.push(new Paragraph({ children: toRuns(p), alignment: JUST, spacing:{after:200} }));
+        });
+        if(i !== selected.length-1) children.push(new Paragraph({ text:"" }));
+      });
+
+      const doc = new Document({
+        styles:{ default:{ document:{ run:{ font:"Arial", size:24 }, paragraph:{ spacing:{ after:120 } } } } },
+        sections:[{ children }]
+      });
+
+      const blob = await Packer.toBlob(doc);
+      const a=document.createElement('a'); 
+      a.href=URL.createObjectURL(blob);
+      a.download=`Hechos_Seleccionados_${new Date().toISOString().slice(0,10)}.docx`; 
+      a.click();
+    });
+
+    // Backup / Restore / Merge JSON (botones)
+    const rFile=$ID("restoreFile"), mFile=$ID("mergeFile");
+    $ID("backupJSON")?.addEventListener("click", ()=> exportBackupJSON());
+    $ID("restoreJSON")?.addEventListener("click", ()=>{
+      if(!rFile) return; rFile.value=""; rFile.click();
+      rFile.onchange=()=>{ if(rFile.files?.[0]) importBackupJSON(rFile.files[0], confirm("¿Reemplazar todo lo guardado por el archivo?\nAceptar = Reemplazar • Cancelar = Fusionar")); };
+    });
+    $ID("mergeJSON")?.addEventListener("click", ()=>{
+      if(!mFile) return; mFile.value=""; mFile.click();
+      mFile.onchange=()=>{ if(mFile.files?.[0]) importBackupJSON(mFile.files[0], false); };
+    });
+
+    // Catálogos UI
+    function cat_loadIntoEditor(){
+      const cat = getCatalogs();
+      const partido = val("cat_partidoSel") || "General Pueyrredon";
+      const locs = (cat[partido]?.localidades||[]).join("\n");
+      const deps = (cat[partido]?.dependencias||[]).join("\n");
+      setv("cat_localidades", locs);
+      setv("cat_dependencias", deps);
+    }
+    const cat_guardar=()=>{ const partido=val("cat_partidoSel")||"General Pueyrredon"; const cat=getCatalogs();
+      cat[partido]={ localidades: val("cat_localidades").split("\n").map(s=>s.trim()).filter(Boolean),
+                     dependencias: val("cat_dependencias").split("\n").map(s=>s.trim()).filter(Boolean) };
+      setCatalogs(cat); if(val("g_partido")===partido){ loadLocalidadesAndDeps(); renderTitlePreview(); } alert("Catálogos guardados."); };
+    const cat_reset=()=>{ setCatalogs(DEFAULT_CATALOGS); cat_loadIntoEditor(); if(val("g_partido")){ loadLocalidadesAndDeps(); renderTitlePreview(); } alert("Restaurados valores de ejemplo."); };
+    $ID("cat_partidoSel")?.addEventListener("change", cat_loadIntoEditor);
+    $ID("cat_guardar")?.addEventListener("click", cat_guardar);
+    $ID("cat_reset")?.addEventListener("click", cat_reset);
+
+    // Primera carga del editor de catálogos
+    cat_loadIntoEditor();
+  }); // <- FIN DOMContentLoaded
+
+  // ===== Cargar snapshot (se usa desde loadSelected) =====
   function loadSnapshot(s){
     const fh = s.generales?.fecha_hora || "";
     const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(fh);
@@ -560,132 +672,5 @@
     renderTagHelper();
   }
 
-  // ===== Backup / Restore / Merge JSON =====
-  function exportBackupJSON() {
-    const cases = getCases();
-    const payload = { version: 1, exported_at: new Date().toISOString(), cases };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `hechos_backup_${new Date().toISOString().slice(0,10)}.json`;
-    a.click();
-  }
-  async function importBackupJSON(file, replace=false) {
-    try{
-      const text = await file.text();
-      const data = JSON.parse(text);
-      const incoming = Array.isArray(data?.cases) ? data.cases : (Array.isArray(data) ? data : null);
-      if(!incoming){ alert("No encontré 'cases' en el JSON."); return; }
-
-      if(replace){
-        setCases(incoming); renderCases(); alert(`Restauración completa: ${incoming.length} hechos.`); return;
-      }
-      const current = getCases();
-      const ids = new Set(current.map(c=>c.id));
-      let added=0, skipped=0;
-      incoming.forEach(it=>{
-        if(!it || typeof it!=="object"){ skipped++; return; }
-        if(!it.id) it.id=freshId();
-        if(!it.name) it.name="Hecho importado";
-        if(ids.has(it.id)) skipped++; else { current.push(it); ids.add(it.id); added++; }
-      });
-      setCases(current); renderCases();
-      alert(`Fusión completa: agregados ${added}, saltados ${skipped}.`);
-    }catch(e){ console.error(e); alert("No se pudo leer el archivo JSON."); }
-  }
-  bind("backupJSON", ()=> exportBackupJSON());
-  bind("restoreJSON", ()=>{
-    const input=$ID("restoreFile"); if(!input) return; input.value=""; input.click();
-    input.onchange=()=>{ if(input.files?.[0]) importBackupJSON(input.files[0], confirm("¿Reemplazar todo lo guardado por el archivo?\nAceptar = Reemplazar • Cancelar = Fusionar")); };
-  });
-  bind("mergeJSON", ()=>{
-    const input=$ID("mergeFile"); if(!input) return; input.value=""; input.click();
-    input.onchange=()=>{ if(input.files?.[0]) importBackupJSON(input.files[0], false); };
-  });
-
-  // ===== Catálogos UI =====
-  function cat_loadIntoEditor(){
-    const cat = getCatalogs();
-    const partido = val("cat_partidoSel") || "General Pueyrredon";
-    const locs = (cat[partido]?.localidades||[]).join("\n");
-    const deps = (cat[partido]?.dependencias||[]).join("\n");
-    setv("cat_localidades", locs);
-    setv("cat_dependencias", deps);
-  }
-  const cat_guardar=()=>{ const partido=val("cat_partidoSel")||"General Pueyrredon"; const cat=getCatalogs();
-    cat[partido]={ localidades: val("cat_localidades").split("\n").map(s=>s.trim()).filter(Boolean),
-                   dependencias: val("cat_dependencias").split("\n").map(s=>s.trim()).filter(Boolean) };
-    setCatalogs(cat); if(val("g_partido")===partido){ loadLocalidadesAndDeps(); renderTitlePreview(); } alert("Catálogos guardados."); };
-  const cat_reset=()=>{ setCatalogs(DEFAULT_CATALOGS); cat_loadIntoEditor(); if(val("g_partido")){ loadLocalidadesAndDeps(); renderTitlePreview(); } alert("Restaurados valores de ejemplo."); };
-  $ID("cat_partidoSel")?.addEventListener("change", cat_loadIntoEditor);
-  $ID("cat_guardar")?.addEventListener("click", cat_guardar);
-  $ID("cat_reset")?.addEventListener("click", cat_reset);
-
-  // ===== Init =====
-  document.addEventListener("DOMContentLoaded", ()=>{
-    renderCases();
-    loadLocalidadesAndDeps();
-    renderTitlePreview();
-    renderTagHelper();
-    cat_loadIntoEditor();
-    refreshAutoCaseName();
-  });
-    // ===== Avisar Hecho =====
-  bind("avisarHecho", ()=>{
-    const id = selectedRadio(); 
-    if(!id){ alert("Elegí un hecho (radio) para avisar."); return; }
-    const c = getCases().find(x=>x.id===id);
-    if(!c){ alert("No encontrado"); return; }
-
-    const built = HRFMT.buildAll(c);
-    const texto = built.waLong || built.html || "Hecho importante.";
-    navigator.clipboard.writeText(texto).then(()=>{
-      alert("Hecho copiado al portapapeles. Ahora podés pegarlo en WhatsApp 📲");
-    });
-  });
-  // ===== Descargar Word Multi =====
-  bind("downloadWordMulti", async ()=>{
-    const ids = selectedChecks(); 
-    if(!ids.length){ alert("Seleccioná al menos un hecho (checkbox)."); return; }
-    const docx = window.docx||{}; 
-    const { Document, Packer, TextRun, Paragraph, AlignmentType } = docx;
-    if(!Document){ showErr("docx no cargada"); return; }
-
-    const toRuns = (html)=>{
-      const parts=(html||"").split(/(<\/?strong>|<\/?em>|<\/?u>)/g);
-      let B=false,I=false,U=false; const runs=[];
-      for(const part of parts){
-        if(part==="<strong>"){B=true;continue;}
-        if(part==="</strong>"){B=false;continue;}
-        if(part==="<em>"){I=true;continue;}
-        if(part==="</em>"){I=false;continue;}
-        if(part==="<u>"){U=true;continue;}
-        if(part==="</u>"){U=false;continue;}
-        if(part){ runs.push(new TextRun({text:part,bold:B,italics:I,underline:U?{}:undefined})); }
-      }
-      return runs;
-    };
-    const JUST = AlignmentType.JUSTIFIED;
-    const selected = getCases().filter(c=>ids.includes(c.id));
-    const children = [];
-    selected.forEach((snap,i)=>{
-      const built = HRFMT.buildAll(snap);
-      children.push(new Paragraph({ children:[ new TextRun({ text: built.forDocx.titulo, bold:true }) ] }));
-      children.push(new Paragraph({ children:[ new TextRun({ text: built.forDocx.subtitulo, bold:true, color: built.forDocx.color }) ] }));
-      (built.forDocx.bodyHtml||"").split(/\n\n+/).forEach(p=>{
-        children.push(new Paragraph({ children: toRuns(p), alignment: JUST, spacing:{after:200} }));
-      });
-      if(i !== selected.length-1) children.push(new Paragraph({ text:"" }));
-    });
-    const doc = new Document({
-      styles:{ default:{ document:{ run:{ font:"Arial", size:24 }, paragraph:{ spacing:{ after:120 } } } } },
-      sections:[{ children }]
-    });
-    const blob = await Packer.toBlob(doc);
-    const a=document.createElement('a'); 
-    a.href=URL.createObjectURL(blob);
-    a.download=`Hechos_Seleccionados_${new Date().toISOString().slice(0,10)}.docx`; 
-    a.click();
-  });
 })();
 
