@@ -1,6 +1,47 @@
-.tabs{margin-top:6px}
-.tabs-nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
-.tab{background:#18233b;border:1px solid var(--border);color:var(--ink);padding:8px 12px;border-radius:10px;cursor:pointer}
-.tab.is-active{background:#233156}
-.tab-panel{display:none}
-.tab-panel.is-active{display:block}
+/* ===== Tabs generales ===== */
+.tabs {
+  display: flex;
+  border-bottom: 2px solid #ccc;
+  margin-bottom: 15px;
+  background: #f9f9f9;
+  border-radius: 6px 6px 0 0;
+  overflow: hidden;
+}
+
+.tab {
+  flex: 1;
+  padding: 10px 15px;
+  text-align: center;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  color: #555;
+  border: none;
+  background: #e9ecef;
+  transition: background 0.2s, color 0.2s;
+}
+
+.tab:hover {
+  background: #dee2e6;
+  color: #007bff;
+}
+
+.tab.active {
+  background: #fff;
+  color: #007bff;
+  border-bottom: 3px solid #007bff;
+}
+
+/* ===== Contenido de tabs ===== */
+.tab-content {
+  display: none;
+  padding: 15px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+}
+
+.tab-content.active {
+  display: block;
+}
