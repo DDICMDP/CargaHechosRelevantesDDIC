@@ -1,41 +1,22 @@
-/* ===== Estilo de tabs ===== */
-.tabs {
-  display: flex;
-  flex-wrap: wrap;
-  border-bottom: 2px solid #ddd;
-  margin-bottom: 10px;
-}
+document.addEventListener("DOMContentLoaded", () => {
+  const tabs = document.querySelectorAll(".tab");
+  const contents = document.querySelectorAll(".tab-content");
 
-.tab {
-  padding: 8px 14px;
-  cursor: pointer;
-  background: #f5f5f5;
-  border: 1px solid #ddd;
-  border-bottom: none;
-  margin-right: 4px;
-  border-radius: 6px 6px 0 0;
-  font-weight: 500;
-  transition: background 0.2s;
-}
+  function clearActive(){
+    tabs.forEach(t => t.classList.remove("active"));
+    contents.forEach(c => c.classList.remove("active"));
+  }
 
-.tab:hover {
-  background: #e0e0e0;
-}
+  tabs.forEach(tab => {
+    tab.addEventListener("click", () => {
+      const target = tab.dataset.target;
+      clearActive();
+      tab.classList.add("active");
+      document.getElementById(target)?.classList.add("active");
+    });
+  });
 
-.tab.active {
-  background: #fff;
-  border-bottom: 2px solid #fff;
-  font-weight: 600;
-}
-
-.tab-content {
-  display: none;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 0 6px 6px 6px;
-  padding: 15px;
-}
-
-.tab-content.active {
-  display: block;
-}
+  // Primer tab activo
+  if (tabs.length) tabs[0].classList.add("active");
+  if (contents.length) contents[0].classList.add("active");
+});
