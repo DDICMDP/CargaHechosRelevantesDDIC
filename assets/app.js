@@ -1,6 +1,4 @@
-// ===== app.js (V9 robusto) =====
 (function () {
-  // ---------- Helpers ----------
   const $ID = (id) => document.getElementById(id);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
   const val = (id) => ($ID(id)?.value ?? "");
@@ -10,11 +8,9 @@
   const styleShow = (id, show) => { if ($ID(id)) $ID(id).style.display = show ? "block" : "none"; };
   const safeJSON = (s, fb) => { try { return JSON.parse(s); } catch { return fb; } };
 
-  // ---------- Constantes ----------
   const CASEKEY = "hr_cases_v1";
   const CATKEY  = "hr_catalogs_v1";
 
-  // Fecha dd-mm-aaaa desde <input type="date">
   const fechaFmt = () => {
     const d = val("g_fecha_dia");
     if (!d) return "";
@@ -22,7 +18,6 @@
     return `${day}-${m}-${y}`;
   };
 
-  // ---------- Catálogos ----------
   const DEFAULT_CATALOGS = {
     "General Pueyrredon": {
       localidades: ["Mar del Plata","Batán","Sierra de los Padres","Chapadmalal","Estación Camet","El Boquerón"],
@@ -55,19 +50,17 @@
       localStorage.setItem(CATKEY, JSON.stringify(DEFAULT_CATALOGS));
       return structuredClone(DEFAULT_CATALOGS);
     }
-    // merge con defaults
     const out = structuredClone(DEFAULT_CATALOGS);
     Object.keys(parsed).forEach(k => out[k] = parsed[k]);
     return out;
   };
   const setCatalogs = (obj) => localStorage.setItem(CATKEY, JSON.stringify(obj));
 
-  // ---------- Casos ----------
   const getCases = () => safeJSON(localStorage.getItem(CASEKEY) || "[]", []);
   const setCases = (a) => localStorage.setItem(CASEKEY, JSON.stringify(a));
-  const freshId = () => "c_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7));
+  const freshId = () =>
+    "c_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
 
-  // ---------- Select dependientes ----------
   function fillSelect(sel, list, { includeManual = false } = {}) {
     if (!sel) return;
     sel.innerHTML = "";
@@ -107,14 +100,12 @@
     styleShow("g_dep_manual_wrap", val("g_dep") === "__manual__");
   }
 
-  // ---------- TitleCase ----------
   const TitleCase = (s) =>
     (s || "").toLowerCase().split(/(\s|-)/).map(p => {
       if (p.trim() === "" || p === "-") return p;
       return p.charAt(0).toUpperCase() + p.slice(1);
     }).join("");
 
-  // ---------- Stores ----------
   const CIV = {
     store: [], editingIndex: null,
     addOrUpdate() {
@@ -286,7 +277,6 @@
     }
   };
 
-  // ---------- Etiquetas disponibles ----------
   const ROLE_KEYS = ["victima","imputado","sindicado","denunciante","testigo","interviniente","aprehendido","detenido","menor","nn","pp","damnificado institucional"];
   const OBJ_KEYS  = ["secuestro","sustraccion","hallazgo","otro"];
 
@@ -310,7 +300,6 @@
     box.querySelectorAll("[data-tag]").forEach(btn => {
       btn.onclick = () => {
         const ta = $ID("cuerpo");
-        // insertar en la posición del cursor
         const start = ta.selectionStart ?? ta.value.length;
         const end   = ta.selectionEnd   ?? ta.value.length;
         const before = ta.value.slice(0, start);
@@ -325,7 +314,6 @@
     });
   }
 
-  // ---------- Build desde form ----------
   function buildDataFromForm() {
     const tipo = val("g_tipoExp") || "PU";
     const num = (val("g_numExp") || "").trim();
@@ -354,11 +342,10 @@
     };
   }
 
-  // ---------- Preview ----------
   function preview() {
     const out = HRFMT.buildAll(buildDataFromForm());
     const prev = $ID("previewHtml");
-    if (prev) prev.textContent = out.waLong; // igual a WhatsApp
+    if (prev) prev.textContent = out.waLong;
     return out;
   }
 
@@ -370,7 +357,6 @@
     if (s) s.textContent = out.forDocx.subtitulo || "";
   }
 
-  // ---------- Lista de casos ----------
   function renderCases() {
     const box = $ID("casesList");
     if (!box) return;
@@ -408,7 +394,6 @@
   const selectedRadio  = () => { const r = document.querySelector('input[name="caseSel"]:checked'); return r ? r.getAttribute("data-id") : null; };
   const selectedChecks = () => $$(".caseCheck:checked").map(x => x.getAttribute("data-id"));
 
-  // ---------- Bind de botones (tras DOMContentLoaded) ----------
   function bind(id, fn) { const n = $ID(id); if (n) n.onclick = fn; }
 
   function wireButtons() {
@@ -538,17 +523,14 @@
     });
   }
 
-  // ---------- Snapshot -> formulario ----------
   function loadSnapshot(s) {
-    const fh = s.generales?.fecha_hora || "";
-    const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(fh);
+    const fh = s.generales?.fecha_hora || ""; const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(fh);
     if (m) setv("g_fecha_dia", `${m[3]}-${m[2]}-${m[1]}`); else setv("g_fecha_dia", "");
 
     setv("g_tipoExp", s.generales?.tipoExp || "PU");
     setv("g_numExp",  s.generales?.numExp || "");
 
-    // Cargas dependientes
-    const cat = getCatalogs(); // asegura que exista
+    const cat = getCatalogs();
     setv("g_partido", s.generales?.partido || "");
     loadLocalidadesDeps();
     setv("g_localidad", s.generales?.localidad || "");
@@ -577,7 +559,6 @@
     renderTitlePreview(); renderTagHelper();
   }
 
-  // ---------- Eventos de refresco ----------
   function wireLivePreview() {
     ["g_fecha_dia","g_tipoExp","g_numExp","g_partido","g_localidad","g_dep","g_dep_manual","g_car","g_sub","g_ok","g_ufi","g_coord","g_relevante","g_supervisado"]
       .forEach(id => {
@@ -587,16 +568,11 @@
       });
   }
 
-  // ---------- Init ----------
   document.addEventListener("DOMContentLoaded", () => {
-    // autocuración de catálogos si hace falta
-    getCatalogs(); // crea defaults si no existen
-    // cargar selects
+    getCatalogs();
     loadPartidos();
     loadLocalidadesDeps();
-    // render inicial de tablas
     CIV.render(); FZA.render(); OBJ.render();
-    // wire botones y preview
     wireButtons();
     wireLivePreview();
     renderTitlePreview();
@@ -604,6 +580,5 @@
     renderCases();
   });
 
-  // Debug global (opcional)
   window.__DEBUG = { CIV, FZA, OBJ };
 })();
