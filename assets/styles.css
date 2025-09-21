@@ -1,132 +1,184 @@
+/* ===== Reset básico ===== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
 body {
   font-family: Arial, sans-serif;
   background: #f7f9fc;
-  margin: 0;
-  padding: 0;
-  color: #222;
+  color: #333;
+  line-height: 1.5;
+  padding: 20px;
 }
 
+/* ===== Encabezado ===== */
 header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #202a44;
-  color: white;
-  padding: 10px 20px;
+  margin-bottom: 20px;
 }
 
 header h1 {
-  margin: 0;
+  font-size: 20px;
+  color: #222;
 }
 
-header .logo {
+header img {
   width: 60px;
   height: 60px;
+  border-radius: 50%;
 }
 
-main {
-  padding: 20px;
-}
-
-.card {
-  background: white;
-  border-radius: 10px;
-  padding: 15px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-h2 {
-  margin-top: 0;
-  color: #202a44;
-}
-
+/* ===== Tabs ===== */
 .tabs {
   display: flex;
+  border-bottom: 2px solid #ccc;
+  margin-bottom: 15px;
+}
+
+.tab {
+  padding: 10px 20px;
+  cursor: pointer;
+  font-weight: bold;
+  color: #555;
+  border: none;
+  background: none;
+  transition: 0.2s;
+}
+
+.tab.active {
+  border-bottom: 3px solid #007bff;
+  color: #007bff;
+}
+
+.tab:hover {
+  color: #0056b3;
+}
+
+/* ===== Formularios ===== */
+form label {
+  display: block;
+  font-size: 14px;
+  margin: 8px 0 4px;
+  font-weight: bold;
+}
+
+form input, form select, form textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  font-size: 14px;
   margin-bottom: 10px;
 }
 
-.tab-btn {
-  padding: 8px 12px;
-  border: none;
-  cursor: pointer;
-  background: #eee;
-  margin-right: 5px;
-  border-radius: 6px 6px 0 0;
-}
-
-.tab-btn.active {
-  background: #202a44;
-  color: white;
-}
-
-.tab-content {
-  display: none;
-}
-
-.tab-content.active {
-  display: block;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 8px;
-}
-
 textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+#cuerpo {
   width: 100%;
-  min-height: 150px;
-  padding: 8px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  font-family: monospace;
+  min-height: 180px;
+  font-size: 14px;
+  font-family: Arial, sans-serif;
 }
 
+/* ===== Botones ===== */
 .btn {
-  background: #202a44;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 12px;
-  margin: 5px 0;
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
   cursor: pointer;
+  margin: 4px 2px;
+  border: none;
+  transition: 0.2s;
 }
 
-.btn:hover {
-  background: #314372;
+.btn.primary {
+  background: #007bff;
+  color: #fff;
+}
+
+.btn.primary:hover {
+  background: #0056b3;
 }
 
 .btn.ghost {
-  background: #eee;
+  background: #f0f0f0;
   color: #333;
 }
 
-.btn.danger {
-  background: #b33a3a;
-  color: white;
+.btn.ghost:hover {
+  background: #ddd;
 }
 
-#casesList table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-#casesList th, #casesList td {
-  border: 1px solid #ccc;
-  padding: 4px;
-}
-
-#tagHelper {
+/* ===== Tablas ===== */
+.table {
+  overflow-x: auto;
   margin-top: 10px;
 }
 
-#tagHelper .chip {
+.table table {
+  border-collapse: collapse;
+  width: 100%;
+  background: #fff;
+}
+
+.table th, .table td {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+
+.table th {
+  background: #f0f0f0;
+  font-weight: bold;
+}
+
+/* ===== Chips etiquetas ===== */
+.chip {
   display: inline-block;
-  background: #202a44;
-  color: white;
-  padding: 4px 8px;
-  margin: 2px;
-  border-radius: 10px;
+  padding: 5px 10px;
+  margin: 3px;
+  font-size: 12px;
+  background: #e0e7ff;
+  color: #333;
+  border-radius: 16px;
+  border: 1px solid #cbd5e1;
   cursor: pointer;
+}
+
+.chip:hover {
+  background: #c7d2fe;
+}
+
+/* ===== Badges subtitulo ===== */
+.badge {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #fff;
+}
+
+.badge.blue {
+  background: #007bff;
+}
+
+.badge.red {
+  background: #dc3545;
+}
+
+/* ===== Preview ===== */
+#previewHtml {
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 15px;
+  margin-top: 15px;
+  white-space: pre-wrap;
+  border-radius: 6px;
 }
