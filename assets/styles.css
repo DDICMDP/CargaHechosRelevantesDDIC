@@ -21,7 +21,7 @@ input, select, textarea{
   width:100%; background:#111827; color:var(--text);
   border:1px solid var(--line2); border-radius:10px; padding:10px 12px;
 }
-textarea.body-textarea{ min-height:220px; }
+textarea.body-textarea{ min-height:220px; } /* ocupa todo el ancho del card */
 
 .grid-4{ display:grid; grid-template-columns: repeat(4,1fr); gap:10px; }
 .grid-3{ display:grid; grid-template-columns: repeat(3,1fr); gap:10px; }
