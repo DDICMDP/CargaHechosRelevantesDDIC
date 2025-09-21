@@ -1,6 +1,5 @@
 /*!
  * HRFMT v1 — Generador de Hechos Relevantes (WA + DOCX + CSV)
- * Requiere opcionalmente: window.docx (docx@^8)
  */
 window.HRFMT = (function(){
   const TitleCase = (s)=> (s||"").toLowerCase().split(/(\s|-)/).map(p=>{
@@ -90,32 +89,27 @@ window.HRFMT = (function(){
     return txt;
   }
 
-  // === Copiado a WhatsApp: configurable ===
+  // Copiado a WhatsApp
   function htmlToWA(html, {mergeSoftBreaks=true} = {}){
     let s = html || "";
-
-    // marcado -> WA
     s = s.replace(/<em><u>(.*?)<\/u><\/em>/gis, '_$1_');
     s = s.replace(/<u><em>(.*?)<\/em><\/u>/gis, '_$1_');
     s = s.replace(/<strong>(.*?)<\/strong>/gis, '*$1*');
     s = s.replace(/<em>(.*?)<\/em>/gis, '_$1_');
     s = s.replace(/<u>(.*?)<\/u>/gis, '$1');
     s = s.replace(/<[^>]+>/g, '');
-
     s = s.replace(/\r/g, '');
 
     if (mergeSoftBreaks) {
       s = s.replace(/[ \t]+\n/g, '\n').replace(/\n[ \t]+/g, '\n');
       s = s.replace(/\n{3,}/g, '\n\n');
-      s = s.replace(/\n\n/g, '<<P>>'); // marcador de párrafo
-      s = s.replace(/\n/g, ' ');       // salto simple -> espacio
-      s = s.replace(/<<P>>/g, '\n\n'); // restaurar párrafos
+      s = s.replace(/\n\n/g, '<<P>>');
+      s = s.replace(/\n/g, ' ');
+      s = s.replace(/<<P>>/g, '\n\n');
       s = s.replace(/[ \t]{2,}/g, ' ');
     } else {
-      // Mantener saltos tal cual, pero no dejar más de 2 seguidos
       s = s.replace(/\n{3,}/g, '\n\n');
     }
-
     return s.trim();
   }
 
@@ -133,7 +127,7 @@ window.HRFMT = (function(){
     const badge = `<span class="badge ${g.esclarecido?'blue':'red'}"><strong>${subt}</strong></span>`;
     const html = `<strong>${titulo.toUpperCase()}</strong>\n${badge}\n${bodyHtml}`;
 
-    const merge = (window.WA_MERGE_SOFTBREAKS !== false); // por defecto true
+    const merge = (window.WA_MERGE_SOFTBREAKS !== false);
     const waHeader1 = `*${titulo}*`;
     const waHeader2 = `*${subt}*`;
     const waBody = htmlToWA(bodyHtml, {mergeSoftBreaks: merge});
