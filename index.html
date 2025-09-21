@@ -2,10 +2,18 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hechos Relevantes</title>
+
+  <!-- Estilos -->
   <link rel="stylesheet" href="assets/styles.css">
   <link rel="stylesheet" href="assets/tabs.css">
+
+  <!-- Librería docx -->
   <script defer src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js"></script>
+  <script defer src="assets/tabs.js"></script>
+  <script defer src="assets/formatter.js"></script>
+  <script defer src="assets/app.js"></script>
 </head>
 <body>
   <header>
@@ -13,32 +21,40 @@
     <img src="assets/LogoDDIC.png" alt="Logo DDIC" class="logo">
   </header>
 
-  <main class="container">
-    <div class="card">
+  <main>
+    <!-- Tabs -->
+    <section>
       <h2>1) Carga de datos</h2>
       <div class="tabs">
-        <div class="tab active">Datos generales</div>
-        <div class="tab">Civiles</div>
-        <div class="tab">Personal Fuerzas</div>
-        <div class="tab">Objetos</div>
-        <div class="tab">Catálogos</div>
+        <button class="tab-button active" data-tab="generales">Datos generales</button>
+        <button class="tab-button" data-tab="civiles">Civiles</button>
+        <button class="tab-button" data-tab="fuerzas">Personal Fuerzas</button>
+        <button class="tab-button" data-tab="objetos">Objetos</button>
+        <button class="tab-button" data-tab="catalogos">Catálogos</button>
       </div>
 
-      <!-- Contenido tabs -->
-      <div class="tab-content active">
+      <div class="tab-content active" id="generales">
+        <!-- Datos generales -->
         <label>Fecha <input type="date" id="g_fecha_dia"></label>
         <label>Tipo
           <select id="g_tipoExp">
             <option value="PU">PU</option>
             <option value="IPP">IPP</option>
+            <option value="OTRO">OTRO</option>
           </select>
         </label>
         <label>Número <input type="text" id="g_numExp"></label>
-        <label>Partido <select id="g_partido"></select></label>
-        <label>Localidad <select id="g_localidad"></select></label>
-        <label>Dependencia <select id="g_dep"></select></label>
+        <label>Partido
+          <select id="g_partido"></select>
+        </label>
+        <label>Localidad
+          <select id="g_localidad"></select>
+        </label>
+        <label>Dependencia
+          <select id="g_dep"></select>
+        </label>
         <div id="g_dep_manual_wrap" style="display:none;">
-          <label>Dependencia manual <input type="text" id="g_dep_manual"></label>
+          <input type="text" id="g_dep_manual" placeholder="Dependencia manual">
         </div>
         <label>Carátula <input type="text" id="g_car"></label>
         <label>Subtítulo <input type="text" id="g_sub"></label>
@@ -54,15 +70,15 @@
         <label><input type="checkbox" id="g_supervisado"> Supervisado</label>
       </div>
 
-      <div class="tab-content">
+      <div class="tab-content" id="civiles">
         <h3>Civiles</h3>
         <input type="text" id="c_nombre" placeholder="Nombre">
         <input type="text" id="c_apellido" placeholder="Apellido">
         <input type="number" id="c_edad" placeholder="Edad">
         <select id="c_genero">
-          <option>-</option>
-          <option>Masculino</option>
-          <option>Femenino</option>
+          <option value="">-</option>
+          <option value="M">M</option>
+          <option value="F">F</option>
         </select>
         <input type="text" id="c_dni" placeholder="DNI">
         <input type="text" id="c_pais" placeholder="País de origen">
@@ -71,19 +87,18 @@
         <select id="c_vinculo">
           <option>Victima</option>
           <option>Imputado</option>
-          <option>Sindicado</option>
           <option>Testigo</option>
         </select>
         <select id="c_obito">
           <option value="false">No</option>
           <option value="true">Sí</option>
         </select>
-        <button id="addCivil" class="btn">Agregar involucrado</button>
+        <button class="btn" id="addCivil">Agregar involucrado</button>
         <div id="civilesList"></div>
       </div>
 
-      <div class="tab-content">
-        <h3>Personal Fuerzas</h3>
+      <div class="tab-content" id="fuerzas">
+        <h3>Personal de Fuerzas</h3>
         <input type="text" id="f_nombre" placeholder="Nombre">
         <input type="text" id="f_apellido" placeholder="Apellido">
         <input type="number" id="f_edad" placeholder="Edad">
@@ -91,81 +106,87 @@
         <input type="text" id="f_jerarquia" placeholder="Jerarquía">
         <input type="text" id="f_legajo" placeholder="Legajo">
         <input type="text" id="f_destino" placeholder="Destino">
+        <input type="text" id="f_loc" placeholder="Localidad domicilio">
+        <input type="text" id="f_calle" placeholder="Calle domicilio">
         <select id="f_vinculo">
           <option>Imputado</option>
-          <option>Victima</option>
+          <option>Testigo</option>
         </select>
         <select id="f_obito">
           <option value="false">No</option>
           <option value="true">Sí</option>
         </select>
-        <button id="addFuerza" class="btn">Agregar personal</button>
+        <button class="btn" id="addFuerza">Agregar personal</button>
         <div id="fuerzasList"></div>
       </div>
 
-      <div class="tab-content">
+      <div class="tab-content" id="objetos">
         <h3>Objetos</h3>
         <input type="text" id="o_desc" placeholder="Descripción">
         <select id="o_vinc">
           <option>Secuestro</option>
-          <option>Sustraccion</option>
-          <option>Hallazgo</option>
-          <option>Otro</option>
+          <option>Sustracción</option>
         </select>
-        <button id="addObjeto" class="btn">Agregar objeto</button>
+        <button class="btn" id="addObjeto">Agregar objeto</button>
         <div id="objetosList"></div>
       </div>
 
-      <div class="tab-content">
+      <div class="tab-content" id="catalogos">
         <h3>Catálogos</h3>
-        <label>Partido <select id="cat_partidoSel"></select></label>
-        <label>Localidades <textarea id="cat_localidades"></textarea></label>
-        <label>Dependencias <textarea id="cat_dependencias"></textarea></label>
+        <label>Partido
+          <select id="cat_partidoSel"></select>
+        </label>
+        <textarea id="cat_localidades"></textarea>
+        <textarea id="cat_dependencias"></textarea>
         <button id="cat_guardar" class="btn">Guardar catálogo</button>
         <button id="cat_reset" class="btn ghost">Restaurar ejemplo</button>
       </div>
-    </div>
+    </section>
 
-    <div class="card">
+    <section>
       <h2>2) Resumen / Cuerpo</h2>
-      <textarea id="cuerpo" rows="12" placeholder="Redactá el cuerpo. Ej: Fecha... entrevistan con #victima:0 ..."></textarea>
-      <p>Estilos rápidos: *negrita*, _itálica_, !subrayado!.</p>
-      <div id="tagHelper" class="tags"></div>
-    </div>
+      <textarea id="cuerpo" placeholder="Redactá el cuerpo..." rows="12"></textarea>
+      <div id="tagHelper"></div>
+    </section>
 
-    <div class="card">
-      <h2>3) Hechos guardados</h2>
-      <input type="text" id="caseSearch" placeholder="Buscar...">
-      <input type="text" id="caseName" placeholder="Se autocompleta con Carátula + Fecha + (PU)">
+    <section>
+      <h2>3) Vista previa</h2>
+      <div id="tituloCompuesto"></div>
+      <div id="subCompuesto"></div>
+      <div id="previewHtml" class="preview"></div>
+    </section>
+
+    <section>
+      <h2>4) Acciones</h2>
+      <input type="text" id="caseName" placeholder="Nombre del hecho">
+      <div class="btn-row">
+        <button class="btn" id="generar">Generar</button>
+        <button class="btn" id="copiarWA">Copiar WhatsApp</button>
+        <button class="btn" id="descargarWord">Descargar Word</button>
+        <button class="btn" id="downloadWordMulti">Word Multi</button>
+        <button class="btn" id="exportCSV">Exportar CSV</button>
+        <button class="btn ghost" id="clearAll">Limpiar</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>5) Hechos guardados</h2>
+      <input type="text" id="caseSearch" placeholder="Buscar hechos...">
       <div id="casesList"></div>
-      <div class="actions">
-        <button id="saveCase" class="btn">Guardar hecho</button>
-        <button id="updateCase" class="btn">Actualizar</button>
-        <button id="deleteCase" class="btn ghost">Eliminar</button>
-        <button id="loadSelected" class="btn">Cargar seleccionado</button>
-        <button id="clearAll" class="btn ghost">Borrar formulario</button>
+      <div class="btn-row">
+        <button class="btn" id="saveCase">Guardar</button>
+        <button class="btn" id="updateCase">Actualizar</button>
+        <button class="btn" id="deleteCase">Eliminar</button>
+        <button class="btn" id="loadSelected">Cargar</button>
+        <button class="btn" id="exportCSV1">Exportar CSV 1</button>
+        <button class="btn ghost" id="backupJSON">Backup JSON</button>
+        <button class="btn ghost" id="restoreJSON">Restaurar JSON</button>
+        <button class="btn ghost" id="mergeJSON">Fusionar JSON</button>
+        <input type="file" id="restoreFile" style="display:none;">
+        <input type="file" id="mergeFile" style="display:none;">
       </div>
-      <div class="actions">
-        <button id="backupJSON" class="btn">Exportar JSON</button>
-        <input type="file" id="restoreFile" style="display:none">
-        <input type="file" id="mergeFile" style="display:none">
-        <button id="restoreJSON" class="btn ghost">Restaurar JSON</button>
-        <button id="mergeJSON" class="btn ghost">Fusionar JSON</button>
-      </div>
-      <div class="actions">
-        <button id="descargarWord" class="btn">Descargar Word</button>
-        <button id="downloadWordMulti" class="btn">Word (varios)</button>
-        <button id="exportCSV" class="btn">Exportar CSV</button>
-        <button id="copiarWA" class="btn">Copiar para WhatsApp</button>
-      </div>
-    </div>
-
-    <div id="errorBox" hidden></div>
+    </section>
   </main>
-
-  <script src="assets/tabs.js"></script>
-  <script src="assets/formatter.js"></script>
-  <script src="assets/app.js"></script>
 </body>
 </html>
 
