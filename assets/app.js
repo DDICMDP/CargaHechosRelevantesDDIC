@@ -643,7 +643,6 @@
       alert("Hecho copiado al portapapeles. Ahora podés pegarlo en WhatsApp 📲");
     });
   });
-
   // ===== Descargar Word Multi =====
   bind("downloadWordMulti", async ()=>{
     const ids = selectedChecks(); 
@@ -666,11 +665,9 @@
       }
       return runs;
     };
-
     const JUST = AlignmentType.JUSTIFIED;
     const selected = getCases().filter(c=>ids.includes(c.id));
     const children = [];
-
     selected.forEach((snap,i)=>{
       const built = HRFMT.buildAll(snap);
       children.push(new Paragraph({ children:[ new TextRun({ text: built.forDocx.titulo, bold:true }) ] }));
@@ -680,18 +677,15 @@
       });
       if(i !== selected.length-1) children.push(new Paragraph({ text:"" }));
     });
-
     const doc = new Document({
       styles:{ default:{ document:{ run:{ font:"Arial", size:24 }, paragraph:{ spacing:{ after:120 } } } } },
       sections:[{ children }]
     });
-
     const blob = await Packer.toBlob(doc);
     const a=document.createElement('a'); 
     a.href=URL.createObjectURL(blob);
     a.download=`Hechos_Seleccionados_${new Date().toISOString().slice(0,10)}.docx`; 
     a.click();
   });
-
 })();
 
